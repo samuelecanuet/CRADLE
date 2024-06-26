@@ -59,6 +59,9 @@ See *Generator_Documentation.pdf* for more details about the generator.
 ### v2.0
 - New file writter, possibility to save .root or .txt file
 - Auto mode for $\beta$ decay type
+### v2.1
+- Quick implementation of nuclear level width for proton decay (taking into account only the width of the initial level.)
+
 ### TODO 
 - Four body decay for radiative correction
 - Inlcude matrix nuclear data for correction in GT decay

@@ -14,7 +14,7 @@ a=1
 b=0
 [Cuts]
 Distance=1.0
-Lifetime=1e9
+Lifetime=1e15
 Energy=1.0
 [BetaDecay]
 Default=Auto

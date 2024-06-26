@@ -1,6 +1,29 @@
 # 32AR ( 98 MS     )
 #  Excitation  flag   Halflife  Mode    Daughter Ex flag   Intensity          Q
 P            0  -        0.098
-                               BetaPlus       5046.1  -       100.      6087.9                             
-            
-
+                               BetaPlus            0  -       0.99971
+                               BetaPlus            0  -       6.8279     11134.32
+                               BetaPlus      1168.55  -       55.599      9965.77
+                               BetaPlus       2209.5  -       0.3414      8924.82
+                               BetaPlus         3772  -       3.5895      7362.32
+                               BetaPlus         4087  -       7.9399      7047.32
+                               BetaPlus         4167  -      0.87788      6967.32
+                               BetaPlus         4439  -      0.11412      6695.32
+                               BetaPlus         4796  -     0.051697      6338.32
+                               BetaPlus       5046.3  -       22.132      6088.02
+                               BetaPlus         5302  -      0.11217      5832.32
+                               BetaPlus         5427  -      0.79009      5707.32
+                               BetaPlus         5695  -      0.22532      5439.32
+                               BetaPlus         5794  -      0.58525      5340.32
+                               BetaPlus         6063  -      0.14241      5071.32
+                               BetaPlus         6259  -       0.1073      4875.32
+                               BetaPlus         6528  -     0.047795      4606.32
+                               BetaPlus         6599  -     0.066328      4535.32
+                               BetaPlus         6738  -      0.12388      4396.32
+                               BetaPlus         7330  -      0.12193      3804.32
+                               BetaPlus         7467  -     0.039017      3667.32
+                               BetaPlus         7507  -    0.0068279      3627.32
+                               BetaPlus         7608  -     0.044869      3526.32
+                               BetaPlus         7861  -     0.073156      3273.32
+                               BetaPlus         8186  -      0.01073      2948.32
+                               

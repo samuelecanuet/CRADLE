@@ -7,7 +7,12 @@
 #include <string>
 #include <sstream>
 
+
 namespace CRADLE {
+
+std::random_device rd;
+std::mt19937 gen(rd());
+
 
 void DecayMode::ThreeBodyDecay(ublas::vector<double>& velocity, Particle* finalState1, Particle* finalState2, Particle* finalState3, ublas::vector<double>& dir2, double Q) {
   //Perform decay in CoM frame
@@ -344,6 +349,10 @@ std::vector<Particle*> ConversionElectron::Decay(Particle* initState, double Q, 
 
 std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
+
+  /// nuclear level width
+  std::cauchy_distribution<> dist( Q, utilities::HBAR * log(2.) / initState->GetLifetime() / 1000 / 2 ) ;
+  Q = dist(gen);
 
   std::ostringstream oss;
   oss << initState->GetCharge()+initState->GetNeutrons() - 1 << utilities::atoms[initState->GetCharge()-2];

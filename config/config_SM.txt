@@ -1,6 +1,6 @@
 [General]
 Verbosity=1
-Verbosity_file=0
+Verbosity_file=1
 [Coupling]
 CS=0.
 CSP=0.
@@ -14,7 +14,7 @@ a=NaN
 b=NaN
 [Cuts]
 Distance=1.0
-Lifetime=1e9
+Lifetime=1e15
 Energy=1.0
 [BetaDecay]
 Default=Auto

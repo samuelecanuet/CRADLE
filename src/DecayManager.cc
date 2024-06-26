@@ -274,6 +274,7 @@ namespace CRADLE
           // TODO
           continue;
         }
+
         DecayChannel *dc =
             new DecayChannel(mode, &GetDecayMode(mode), Q, intensity, lifetime, excitationEnergy,
                              daughterExcitationEnergy);
@@ -317,6 +318,7 @@ namespace CRADLE
           // cout << "Adding gamma decay level " << initEnergy << " " << E << endl;
           if ((initEnergy - E) >= 0)
           {
+
             DecayChannel *dcGamma =
                 new DecayChannel("Gamma", &GetDecayMode("Gamma"), E, intensity / (1. + convIntensity),
                                  lifetime, initEnergy, initEnergy - E);
