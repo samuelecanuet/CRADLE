@@ -352,7 +352,11 @@ std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daugh
 
   /// nuclear level width
   std::cauchy_distribution<> dist( Q, utilities::HBAR * log(2.) / initState->GetLifetime() / 1000 / 2 ) ;
-  Q = dist(gen);
+  double Q_width = dist(gen);
+
+  while (Q_width < 0) {
+    Q_width = dist(gen);
+  }
 
   std::ostringstream oss;
   oss << initState->GetCharge()+initState->GetNeutrons() - 1 << utilities::atoms[initState->GetCharge()-2];
