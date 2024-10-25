@@ -35,7 +35,6 @@ std::multimap<B, A> flip_map(const std::map<A, B> &src)
 
 namespace CRADLE
 {
-
   using std::cout;
   using std::endl;
   using std::map;
@@ -156,11 +155,12 @@ namespace CRADLE
   {
     RegisterDecayMode("BetaMinus", BetaMinus::GetInstance());
     RegisterDecayMode("BetaPlus", BetaPlus::GetInstance());
-    // RegisterDecayMode("ConversionElectron", ConversionElectron::GetInstance());
+    RegisterDecayMode("ConversionElectron", ConversionElectron::GetInstance());
     RegisterDecayMode("Proton", Proton::GetInstance());
     RegisterDecayMode("Alpha", Alpha::GetInstance());
     RegisterDecayMode("Gamma", Gamma::GetInstance());
     RegisterDecayMode("IT", Gamma::GetInstance());
+    RegisterDecayMode("EC", ElectronCapture::GetInstance());  
   }
 
   void DecayManager::RegisterSpectrumGenerator(const string decayMode, SpectrumGenerator &sg)
@@ -185,6 +185,8 @@ namespace CRADLE
     RegisterSpectrumGenerator("Alpha", DeltaSpectrumGenerator::GetInstance());
     RegisterSpectrumGenerator("Gamma", DeltaSpectrumGenerator::GetInstance());
     RegisterSpectrumGenerator("IT", DeltaSpectrumGenerator::GetInstance());
+    RegisterSpectrumGenerator("EC", DeltaSpectrumGenerator::GetInstance());
+    RegisterSpectrumGenerator("ConversionElectron", DeltaSpectrumGenerator::GetInstance());
     RegisterSpectrumGenerator("BetaPlus", SimpleBetaDecay::GetInstance());
     RegisterSpectrumGenerator("BetaMinus", SimpleBetaDecay::GetInstance());
   }
@@ -271,20 +273,41 @@ namespace CRADLE
         excitationEnergy << " to " << daughterExcitationEnergy << endl;*/
         if (mode.find("shellEC") != string::npos)
         {
-          // TODO
-          continue;
+          if (mode.find("K") != string::npos)
+          {
+            DecayChannel *dc =
+                new DecayChannel("EC", &GetDecayMode("EC"), Q - utilities::GetBindingEnergy(p->GetCharge(), utilities::K), intensity, lifetime, excitationEnergy,
+                                 daughterExcitationEnergy);
+            p->AddDecayChannel(dc);
+          }
+          else if (mode.find("L") != string::npos)
+          {
+            DecayChannel *dc =
+                new DecayChannel(mode, &GetDecayMode("EC"), Q - utilities::GetBindingEnergy(p->GetCharge(), utilities::L1), intensity, lifetime, excitationEnergy,
+                                 daughterExcitationEnergy);
+            p->AddDecayChannel(dc);
+          }
+          else 
+          {
+            DecayChannel *dc =
+                new DecayChannel(mode, &GetDecayMode("EC"), Q - utilities::GetBindingEnergy(p->GetCharge(), utilities::M1), intensity, lifetime, excitationEnergy,
+                                 daughterExcitationEnergy);
+            p->AddDecayChannel(dc);
+          }
         }
-
-        DecayChannel *dc =
-            new DecayChannel(mode, &GetDecayMode(mode), Q, intensity, lifetime, excitationEnergy,
-                             daughterExcitationEnergy);
-        p->AddDecayChannel(dc);
+        else
+        {
+          DecayChannel *dc =
+              new DecayChannel(mode, &GetDecayMode(mode), Q, intensity, lifetime, excitationEnergy,
+                               daughterExcitationEnergy);
+          p->AddDecayChannel(dc);
+        }
       }
     }
 
     std::ostringstream gammaFileSS;
     gammaFileSS << configOptions.envOptions.Gammadata;
-    gammaFileSS << "z" << Z << ".a" << A;
+    gammaFileSS << "/z" << Z << ".a" << A;
     std::ifstream gammaDataFile(gammaFileSS.str().c_str());
     if (gammaDataFile.is_open())
     {
@@ -323,7 +346,58 @@ namespace CRADLE
                 new DecayChannel("Gamma", &GetDecayMode("Gamma"), E, intensity / (1. + convIntensity),
                                  lifetime, initEnergy, initEnergy - E);
             p->AddDecayChannel(dcGamma);
+
+            if (convIntensity == 0)
+            {
+              continue;
+            }
+
+            DecayChannel *dcConvK =
+                new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - utilities::GetBindingEnergy(p->GetCharge(), utilities::K), intensity * convIntensity * (1. + convIntensity) * kCoeff,
+                                 lifetime, initEnergy, initEnergy - E);
+            p->AddDecayChannel(dcConvK);
+
+            DecayChannel *dcConvL1 =
+                new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - utilities::GetBindingEnergy(p->GetCharge(), utilities::L1), intensity * convIntensity * (1. + convIntensity) * lCoeff1,
+                                 lifetime, initEnergy, initEnergy - E);
+            p->AddDecayChannel(dcConvL1);
+
+            DecayChannel *dcConvL2 =
+                new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - utilities::GetBindingEnergy(p->GetCharge(), utilities::L2), intensity * convIntensity * (1. + convIntensity) * lCoeff2,
+                                 lifetime, initEnergy, initEnergy - E);
+            p->AddDecayChannel(dcConvL2);
+
+            DecayChannel *dcConvL3 =
+                new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - utilities::GetBindingEnergy(p->GetCharge(), utilities::L3), intensity * convIntensity * (1. + convIntensity) * lCoeff3,
+                                 lifetime, initEnergy, initEnergy - E);
+            p->AddDecayChannel(dcConvL3);
+
+            DecayChannel *dcConvM1 =
+                new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - utilities::GetBindingEnergy(p->GetCharge(), utilities::M1), intensity * convIntensity * (1. + convIntensity) * mCoeff1,
+                                 lifetime, initEnergy, initEnergy - E);
+            p->AddDecayChannel(dcConvM1);
+
+            DecayChannel *dcConvM2 =
+                new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - utilities::GetBindingEnergy(p->GetCharge(), utilities::M2), intensity * convIntensity * (1. + convIntensity) * mCoeff2,
+                                 lifetime, initEnergy, initEnergy - E);
+            p->AddDecayChannel(dcConvM2);
+
+            DecayChannel *dcConvM3 =
+                new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - utilities::GetBindingEnergy(p->GetCharge(), utilities::M3), intensity * convIntensity * (1. + convIntensity) * mCoeff3,
+                                 lifetime, initEnergy, initEnergy - E);
+            p->AddDecayChannel(dcConvM3);
+
+            DecayChannel *dcConvM4 =
+                new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - utilities::GetBindingEnergy(p->GetCharge(), utilities::M4), intensity * convIntensity * (1. + convIntensity) * mCoeff4,
+                                 lifetime, initEnergy, initEnergy - E);
+            p->AddDecayChannel(dcConvM4);
+
+            DecayChannel *dcConvM5 =
+                new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - utilities::GetBindingEnergy(p->GetCharge(), utilities::M5), intensity * convIntensity * (1. + convIntensity) * mCoeff5,
+                                 lifetime, initEnergy, initEnergy - E);
+            p->AddDecayChannel(dcConvM5);
           }
+
           else
           {
             std::cerr << "WARNING: Attempted to add gamma branch to a final state with negative excitation energy. Please check you are using the correct version of PhotonEvaporation.\nCurrent filename: " << gammaFileSS.str() << std::endl;
@@ -571,6 +645,7 @@ namespace CRADLE
     Particle *ini = GetNewParticle(initStateName);
     ini->SetExcitationEnergy(initExcitationEn);
     particleStack.push_back(ini);
+    
     if (verbosity == 0)
     {
       while (!particleStack.empty())

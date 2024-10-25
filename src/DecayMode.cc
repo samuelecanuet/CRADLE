@@ -249,7 +249,7 @@ std::vector<Particle*> BetaPlus::Decay(Particle* initState, double Q, double dau
   }
   else if (dm.configOptions.betaDecay.Default == "Gamow-Teller") {
     mgt = 1.;
-    Type = "Gomow-Teller";
+    Type = "Gamow-Teller";
   }
   else if (dm.configOptions.betaDecay.Default == "Auto") {
     
@@ -336,7 +336,7 @@ std::vector<Particle*> ConversionElectron::Decay(Particle* initState, double Q, 
 
   ublas::vector<double> velocity = -initState->GetVelocity();
   Particle* recoil = DecayManager::GetInstance().GetNewParticle(initState->GetRawName());
-  Particle* e = DecayManager::GetInstance().GetNewParticle("e+");
+  Particle* e = DecayManager::GetInstance().GetNewParticle("e-");
   recoil->SetExcitationEnergy(daughterExEn);
 
   TwoBodyDecay(velocity, recoil, e, Q);
@@ -350,7 +350,7 @@ std::vector<Particle*> ConversionElectron::Decay(Particle* initState, double Q, 
 std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
 
-  /// nuclear level width
+  //// nuclear level width
   double level_life_time = initState->GetLifetime();
   if (level_life_time != 0)
   {
@@ -360,7 +360,7 @@ std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daugh
     while (Q < 0) {
       Q = dist(gen);
     }
-  }
+  } 
 
   std::ostringstream oss;
   oss << initState->GetCharge()+initState->GetNeutrons() - 1 << utilities::atoms[initState->GetCharge()-2];
@@ -379,6 +379,18 @@ std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daugh
 
 std::vector<Particle*> Alpha::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
+
+  /// nuclear level width
+  double level_life_time = initState->GetLifetime();
+  if (level_life_time != 0)
+  {
+    std::cauchy_distribution<> dist( Q, utilities::HBAR * log(2.) / level_life_time / 1000 / 2 ) ;
+    Q = dist(gen);
+
+    while (Q < 0) {
+      Q = dist(gen);
+    }
+  }
 
   std::ostringstream oss;
   oss << initState->GetCharge()+initState->GetNeutrons() - 4 << utilities::atoms[initState->GetCharge()-3];
@@ -411,6 +423,25 @@ std::vector<Particle*> Gamma::Decay(Particle* initState, double Q, double daught
   return finalStates;
 }
 
+std::vector<Particle*> ElectronCapture::Decay(Particle* initState, double Q, double daughterExEn) {
+  std::vector<Particle*> finalStates;
+
+  
+  std::ostringstream oss;
+  oss << initState->GetCharge()+initState->GetNeutrons() << utilities::atoms[initState->GetCharge()-2];
+  Particle* recoil = DecayManager::GetInstance().GetNewParticle(oss.str(), initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons());
+  Particle* enu = DecayManager::GetInstance().GetNewParticle("enu");
+  recoil->SetExcitationEnergy(daughterExEn);
+
+  ublas::vector<double> velocity = -initState->GetVelocity();
+  TwoBodyDecay(velocity, recoil, enu, Q);
+
+  finalStates.push_back(recoil);
+  finalStates.push_back(enu);
+
+  return finalStates;
+}
+
 DecayMode::DecayMode() { }
 
 DecayMode::~DecayMode() { }
@@ -430,5 +461,7 @@ Proton::Proton () { }
 Alpha::Alpha () { }
 
 Gamma::Gamma () { }
+
+ElectronCapture::ElectronCapture () { }
 
 }//End of CRADLE namespace

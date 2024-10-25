@@ -60,15 +60,17 @@ See *Generator_Documentation.pdf* for more details about the generator.
 - New file writter, possibility to save .root or .txt file
 - Auto mode for $\beta$ decay type
 ### v2.1
-- Quick implementation of nuclear level width for proton decay (taking into account only the width of the initial level.)
+- Quick implementation of nuclear level width (Breit-Wigner) for proton decay (taking into account only the width of the initial level.)
+### v2.2
+- Implementation of Internal Conversion 
+- Implementation of Electron Capture
 
 ### TODO 
 - Four body decay for radiative correction
-- Inlcude matrix nuclear data for correction in GT decay
+- Include matrix nuclear data for mixed decay
 - Using NUDAT data
-- EC decay mode
 - Polarized nuclei
-- Inlcude R-Matrix data (for FSD of the light nuclei)
+- Include R-Matrix 
 
 ## Authors
 

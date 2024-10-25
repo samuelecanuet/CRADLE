@@ -51,8 +51,9 @@ namespace utilities {
 
   enum DecayType { FERMI, GAMOW_TELLER, MIXED };
 
-  const std::string atoms[] = {"H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt"};
+  enum AtomicShell { K = 0, L1 = 1, L2 = 2, L3 = 3, M1 = 4, M2 = 5, M3 = 6, M4 = 7, M5 = 8};
 
+  const std::string atoms[] = {"H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt"};
 
    /////// ajout de SL 12/05/2023///////////////////////
   inline double GetJpi(int A, int Z, double levelEn)
@@ -110,7 +111,7 @@ namespace utilities {
     // std::cout<<"INITIAL :\t "<<"Jpi = "<<Jpi_init<<"  "<<"Energy = "<< initState->GetExcitationEnergy()<<std::endl;
     // std::cout<<"FINAL :\t\t "<<"Jpi = "<<Jpi_final<<"  "<<"Energy = "<< finalState->GetExcitationEnergy()<<std::endl;
 
-    if (Jpi_final == 0. && Jpi_init == 0.)/// J check
+    if (Jpi_final - Jpi_init == 0.)/// J check
     {
       Type = "Fermi";
       return Type;
@@ -124,6 +125,14 @@ namespace utilities {
 
   }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
+//// ADDING by S.Lecanuet 24/10/2024  ////
+inline double GetBindingEnergy(int Z, int ShellNb)
+{
+  assert (Z>0 && Z<101 && ShellNb<screening::fNumberOfShells[Z]);
+  int offsetZ = screening::fIndexOfShells[Z];
+  return screening::fBindingEnergies[offsetZ + ShellNb] / 1000; // from eV to keV
+}
+//////////////////////////////////////////
 
   inline vector<double> RandomDirection () {
     double z, phi;

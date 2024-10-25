@@ -54,7 +54,7 @@ class Particle {
     inline std::string GetInfoForFile() const {
       std::string n;
       std::ostringstream oss(n);
-      oss << name << "\t" << currentExcitationEnergy << "\t" << GetKinEnergy() << "\t" << fourMomentum(0) << "\t" << fourMomentum(1)/fourMomentum(0) << "\t" << fourMomentum(2)/fourMomentum(0) << "\t" << fourMomentum(3)/fourMomentum(0);
+      oss << name << "\t" << currentExcitationEnergy << "\t" << GetKinEnergy() << "\t" << fourMomentum(0) << "\t" << fourMomentum(1) << "\t" << fourMomentum(2) << "\t" << fourMomentum(3);
       return oss.str();
     };
 

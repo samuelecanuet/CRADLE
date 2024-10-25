@@ -110,5 +110,19 @@ class Gamma: public DecayMode {
     Gamma& operator=(Gamma const& copy);
 };
 
+class ElectronCapture: public DecayMode {
+    public:
+    static ElectronCapture& GetInstance() {
+      static ElectronCapture instance;
+      return instance;
+    }
+    std::vector<Particle*> Decay(Particle*, double, double);
+
+  protected:
+    ElectronCapture();
+    ElectronCapture(ElectronCapture const& copy);
+    ElectronCapture& operator=(ElectronCapture const& copy);
+};
+
 }//End of CRADLE namespace
 #endif
