@@ -64,7 +64,7 @@ See *Generator_Documentation.pdf* for more details about the generator.
 ### v2.2
 - Implementation of Internal Conversion 
 - Implementation of Electron Capture
-### V2.3
+### v2.3
 - Improved Multi-Threading Mode
 
 ### TODO 
