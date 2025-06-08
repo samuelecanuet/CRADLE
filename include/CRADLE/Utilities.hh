@@ -33,6 +33,7 @@ namespace CRADLE {
 
 namespace utilities {
   using namespace boost::numeric::ublas;
+  
 
   const double PI = 3.14159265359;
   const double C = 299792458;//m/s
@@ -54,6 +55,55 @@ namespace utilities {
   enum AtomicShell { K = 0, L1 = 1, L2 = 2, L3 = 3, M1 = 4, M2 = 5, M3 = 6, M4 = 7, M5 = 8};
 
   const std::string atoms[] = {"H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt"};
+
+  /////// ajout de SL 28/04/2025///////////////////////
+  inline double BreitWigner(double E0, double lifetime, double ProbabilityBoundaries = 1)
+  {
+    std::random_device rd;
+  std::mt19937 gen(rd());
+    if (ProbabilityBoundaries < 0. || ProbabilityBoundaries > 1.)
+    {
+      std::cerr << "Error in BreitWigner: ProbabilityBoundaries must be between 0 and 1" << std::endl;
+      return -1.;
+    }
+
+    if (lifetime < 0.)
+    {
+      std::cerr << "Error in BreitWigner: lifetime must be positive" << std::endl;
+      return -1.;
+    }
+
+    if (lifetime == 0.)
+    {
+      return E0;
+    }
+
+
+    double E = 0.;
+    double gamma = utilities::HBAR * log(2.) / lifetime / 1000 / 2;
+    // std::cout << "gamma = " << gamma << std::endl;
+    const double a = std::tan(M_PI * ProbabilityBoundaries / 2.0);
+    double Emin = E0 - a * gamma;
+    double Emax = E0 + a * gamma;
+    std::cauchy_distribution<> cauchy( E0, gamma );
+    E = cauchy(gen);
+
+    if (ProbabilityBoundaries == 1)
+    {
+      Emin = 0;
+      Emax = 1e10;
+    }
+
+    while ((E < Emin || E > Emax) && (E < 0.))
+    {
+      E = cauchy(gen);
+    }
+
+    return E;
+  }
+  /////////////////////////////////////////////////////
+
+
 
    /////// ajout de SL 12/05/2023///////////////////////
   inline double GetJpi(int A, int Z, double levelEn)
@@ -94,6 +144,7 @@ namespace utilities {
     {
       std::cerr << "Erreur lors de l'ouverture du fichier " << gammaFileSS.str() << std::endl;
     }
+    return -1.;
   }
 
 
@@ -128,7 +179,7 @@ namespace utilities {
 //// ADDING by S.Lecanuet 24/10/2024  ////
 inline double GetBindingEnergy(int Z, int ShellNb)
 {
-  assert (Z>0 && Z<101 && ShellNb<screening::fNumberOfShells[Z]);
+  // assert (Z>0 && Z<101 && ShellNb<screening::fNumberOfShells[Z]);
   int offsetZ = screening::fIndexOfShells[Z];
   return screening::fBindingEnergies[offsetZ + ShellNb] / 1000; // from eV to keV
 }
@@ -794,8 +845,14 @@ inline double GetBindingEnergy(int Z, int ShellNb)
   }
 
   inline double GetAMEMass(std::string filename, int Z, int A) {
+    // std::cout << "Reading AME data from " << filename << std::endl;
     std::ifstream ameDataFile(filename.c_str());
     std::string line;
+
+    if (!ameDataFile.is_open()) {
+      std::cout << "Error: Could not find file " << filename << std::endl;
+      return 0.;
+    }
 
 
     int skipHeader = 36;
@@ -828,7 +885,7 @@ inline double GetBindingEnergy(int Z, int ShellNb)
 	a = std::stoi(line.substr(14, 5));
 	name = line.substr(19, 4);
 	//O = line.substr(23, 5);
-	//std::cout << "Name " << name << std::endl;
+	// std::cout << "Name " << name << std::endl;
 	//massExcess = std::stod(line.substr(30, 14));
 	//massExcessUnc
 
@@ -836,7 +893,7 @@ inline double GetBindingEnergy(int Z, int ShellNb)
 	std::replace(atomicMassString.begin(), atomicMassString.end(), '#', '.');
 	atomicMass = std::stod(atomicMassString)*1e-6*UMASSC2;
 	if (z == Z && a == A) {
-          std::cout << "Found AME atomic mass for " << a << name << ": " << atomicMass << std::endl;
+          // std::cout << "Found AME atomic mass for " << a << name << ": " << atomicMass << std::endl;
 	  return atomicMass;
 	}
       }

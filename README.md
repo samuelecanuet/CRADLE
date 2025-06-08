@@ -55,15 +55,17 @@ See *Generator_Documentation.pdf* for more details about the generator.
 
 ## Version 
 ### v1.0 
-- All feature working
+- All features working
 ### v2.0
 - New file writter, possibility to save .root or .txt file
 - Auto mode for $\beta$ decay type
 ### v2.1
-- Quick implementation of nuclear level width (Breit-Wigner) for proton decay (taking into account only the width of the initial level.)
+- Quick implementation of nuclear level width (Breit-Wigner) for proton and alpha decay (taking into account only the width of the current decaying level.)
 ### v2.2
 - Implementation of Internal Conversion 
 - Implementation of Electron Capture
+### V2.3
+- Improved Multi-Threading Mode
 
 ### TODO 
 - Four body decay for radiative correction

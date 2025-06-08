@@ -20,6 +20,7 @@ class Particle {
     int neutrons;
     double spin;
     double currentExcitationEnergy;
+    double currentDeltaExcitationEnergy;
 
     std::string name;
     
@@ -60,6 +61,7 @@ class Particle {
 
     inline void SetMomentum(ublas::vector<double> v) { fourMomentum = v; };
     inline void SetExcitationEnergy(double e) { currentExcitationEnergy = e; fourMomentum(0)+=e; };
+    inline void SetDeltaExcitationEnergy(double e) { currentDeltaExcitationEnergy = e; fourMomentum(0)+=e; };
     double GetLifetime() const;
     inline int GetCharge() const { return charge; };
     inline int GetNeutrons() const { return neutrons; };

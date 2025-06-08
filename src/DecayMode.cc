@@ -10,10 +10,6 @@
 
 namespace CRADLE {
 
-std::random_device rd;
-std::mt19937 gen(rd());
-
-
 void DecayMode::ThreeBodyDecay(ublas::vector<double>& velocity, Particle* finalState1, Particle* finalState2, Particle* finalState3, ublas::vector<double>& dir2, double Q) {
   //Perform decay in CoM frame
   ublas::vector<double> momentum1 = finalState1->GetMomentum();
@@ -351,16 +347,8 @@ std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daugh
   std::vector<Particle*> finalStates;
 
   //// nuclear level width
-  double level_life_time = initState->GetLifetime();
-  if (level_life_time != 0)
-  {
-    std::cauchy_distribution<> dist( Q, utilities::HBAR * log(2.) / level_life_time / 1000 / 2 ) ;
-    Q = dist(gen);
-
-    while (Q < 0) {
-      Q = dist(gen);
-    }
-  } 
+  Q = utilities::BreitWigner(Q, initState->GetLifetime(), 0.999);
+  // std::cout << "Q = " << Q << std::endl;
 
   std::ostringstream oss;
   oss << initState->GetCharge()+initState->GetNeutrons() - 1 << utilities::atoms[initState->GetCharge()-2];
@@ -380,17 +368,8 @@ std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daugh
 std::vector<Particle*> Alpha::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
 
-  /// nuclear level width
-  double level_life_time = initState->GetLifetime();
-  if (level_life_time != 0)
-  {
-    std::cauchy_distribution<> dist( Q, utilities::HBAR * log(2.) / level_life_time / 1000 / 2 ) ;
-    Q = dist(gen);
-
-    while (Q < 0) {
-      Q = dist(gen);
-    }
-  }
+  //// nuclear level width
+  Q = utilities::BreitWigner(Q, initState->GetLifetime(), 0.999);
 
   std::ostringstream oss;
   oss << initState->GetCharge()+initState->GetNeutrons() - 4 << utilities::atoms[initState->GetCharge()-3];

@@ -4,6 +4,7 @@
 #include "CRADLE/Particle.hh"
 #include "CRADLE/DecayMode.hh"
 #include "CRADLE/SpectrumGenerator.hh"
+#include "CRADLE/ThreadPool.hh"
 
 #include "TFile.h"
 #include "TTree.h"
@@ -222,6 +223,7 @@ namespace CRADLE
 
     if (atomicMass == 0)
     {
+      cout << "No AME data found for " << Z << " " << A << endl;
       atomicMass = utilities::GetApproximateMass(Z, A);
     }
 
@@ -276,7 +278,7 @@ namespace CRADLE
           if (mode.find("K") != string::npos)
           {
             DecayChannel *dc =
-                new DecayChannel("EC", &GetDecayMode("EC"), Q - utilities::GetBindingEnergy(p->GetCharge(), utilities::K), intensity, lifetime, excitationEnergy,
+                new DecayChannel(mode, &GetDecayMode("EC"), Q - utilities::GetBindingEnergy(p->GetCharge(), utilities::K), intensity, lifetime, excitationEnergy,
                                  daughterExcitationEnergy);
             p->AddDecayChannel(dc);
           }
@@ -307,7 +309,7 @@ namespace CRADLE
 
     std::ostringstream gammaFileSS;
     gammaFileSS << configOptions.envOptions.Gammadata;
-    gammaFileSS << "/z" << Z << ".a" << A;
+    gammaFileSS << "z" << Z << ".a" << A;
     std::ifstream gammaDataFile(gammaFileSS.str().c_str());
     if (gammaDataFile.is_open())
     {
@@ -546,6 +548,7 @@ namespace CRADLE
     ParticleData_ini.code = 0;
     ParticleData_ini.excitation_energy = 0;
     ParticleData_ini.kinetic_energy = 0;
+    ParticleData_ini.p = 0;
     ParticleData_ini.px = 0;
     ParticleData_ini.py = 0;
     ParticleData_ini.pz = 0;
@@ -555,6 +558,14 @@ namespace CRADLE
     std::vector<Particle *> particleStack;
     Particle *ini = GetNewParticle(initStateName);
     ini->SetExcitationEnergy(initExcitationEn);
+
+    // SET INITIAL KIONETIC ENERGY TO 10keV and the momentum only on the z axis
+    // ini->SetKinEnergy(10);
+    // ublas::vector<double> momentum = ini->GetMomentum();
+    // momentum[3] = sqrt(ini->GetKinEnergy() * 2.0 * ini->GetMass());
+    // ini->SetMomentum(momentum);
+    /////////////////////////////////////////////////////////////////////////////
+    
     particleStack.push_back(ini);
     while (!particleStack.empty())
     {
@@ -563,6 +574,7 @@ namespace CRADLE
         ParticleData_ini.code = 0;
         ParticleData_ini.excitation_energy = 0;
         ParticleData_ini.kinetic_energy = 0;
+        ParticleData_ini.p = 0;
         ParticleData_ini.px = 0;
         ParticleData_ini.py = 0;
         ParticleData_ini.pz = 0;
@@ -587,6 +599,7 @@ namespace CRADLE
           vec[totEvents].excitation_energy = p->GetExcitationEnergy();
           vec[totEvents].kinetic_energy = p->GetKinEnergy();
           mom = sqrt(p->GetMomentum()[1]*p->GetMomentum()[1] + p->GetMomentum()[2]*p->GetMomentum()[2] + p->GetMomentum()[3]*p->GetMomentum()[3]);
+          vec[totEvents].p = p->GetMomentum()[0];
           vec[totEvents].px = p->GetMomentum()[1] / (mom);
           vec[totEvents].py = p->GetMomentum()[2] / (mom);
           vec[totEvents].pz = p->GetMomentum()[3] / (mom);
@@ -602,6 +615,7 @@ namespace CRADLE
         vec[totEvents].excitation_energy = p->GetExcitationEnergy();
         vec[totEvents].kinetic_energy = p->GetKinEnergy();
         mom = sqrt(p->GetMomentum()[1]*p->GetMomentum()[1] + p->GetMomentum()[2]*p->GetMomentum()[2] + p->GetMomentum()[3]*p->GetMomentum()[3]);
+        vec[totEvents].p = p->GetMomentum()[0];
         vec[totEvents].px = p->GetMomentum()[1] / (mom);
         vec[totEvents].py = p->GetMomentum()[2] / (mom);
         vec[totEvents].pz = p->GetMomentum()[3] / (mom);
@@ -644,6 +658,14 @@ namespace CRADLE
     std::vector<Particle *> particleStack;
     Particle *ini = GetNewParticle(initStateName);
     ini->SetExcitationEnergy(initExcitationEn);
+
+    // SET INITIAL KIONETIC ENERGY TO 10keV and the momentuml only on the z axis
+    ini->SetKinEnergy(0.0);
+    ublas::vector<double> momentum = ini->GetMomentum();
+    momentum[3] = sqrt(ini->GetKinEnergy() * 2.0 * ini->GetMass());
+    ini->SetMomentum(momentum);
+    /////////////////////////////////////////////////////////////////////////////
+
     particleStack.push_back(ini);
     
     if (verbosity == 0)
@@ -801,37 +823,99 @@ namespace CRADLE
       TTree* tree = new TTree("ParticleTree", "Tree for Particle Data");
       
       ParticleData pData;
-      tree->Branch("event", &pData.event);
-      tree->Branch("time", &pData.time);
-      tree->Branch("code", &pData.code);
-      tree->Branch("energy", &pData.kinetic_energy);
-      tree->Branch("excitation_energy", &pData.excitation_energy);
-      tree->Branch("px", &pData.px);
-      tree->Branch("py", &pData.py);
-      tree->Branch("pz", &pData.pz);
 
-      for (int i = 0; i < nrParticles; i += NRTHREADS)
+      vector <double> Time;
+      vector <int> Code;
+      vector <double> Kinetic_energy;
+      vector <double> Excitation_energy;
+      vector <double> p;
+      vector <double> Px;
+      vector <double> Py;
+      vector <double> Pz;
+
+      // tree->Branch("event", &pData.event);
+      tree->Branch("time", &Time);
+      tree->Branch("code", &Code);
+      tree->Branch("energy", &Kinetic_energy);
+      tree->Branch("excitation_energy", &Excitation_energy);
+      tree->Branch("p", &p);
+      tree->Branch("px", &Px);
+      tree->Branch("py", &Py);
+      tree->Branch("pz", &Pz);
+
+
+      //////// NORMAL MULTITREADING //////////////////
+      // for (int i = 0; i < nrParticles; i += NRTHREADS)
+      // {
+      //   // cout << "LOOP NR " << i+1 << endl;
+      //   int threads = std::min(NRTHREADS, nrParticles - i);
+      //   std::future<std::vector<ParticleData>> f[threads];
+      //   for (int t = 0; t < threads; t++)
+      //   {
+      //     f[t] = std::async(std::launch::async, &DecayManager::GenerateEvent_ROOT, this, i + t, verbosity);
+      //   }
+
+      //   for (int t = 0; t < threads; t++)
+      //   {
+      //     for (const auto &particle : f[t].get())
+      //     {
+      //       Time.push_back(particle.time);
+      //       Code.push_back(particle.code);
+      //       Kinetic_energy.push_back(particle.kinetic_energy);
+      //       Excitation_energy.push_back(particle.excitation_energy);
+      //       p.push_back(particle.p);
+      //       Px.push_back(particle.px);
+      //       Py.push_back(particle.py);
+      //       Pz.push_back(particle.pz);
+      //     }
+      //     tree->Fill();
+      //     Time.clear();
+      //     Code.clear();
+      //     Kinetic_energy.clear();
+      //     Excitation_energy.clear();
+      //     p.clear();
+      //     Px.clear();
+      //     Py.clear();
+      //     Pz.clear();
+      //     ++show_progress;
+      //   }
+      // }
+      // outputFile->Write();
+      // outputFile->Close();
+      ////////////////////////////////////////////////////
+
+      //////// OPTIMIZATION WITH THREADPOOL //////////////
+      ThreadPool pool(NRTHREADS);
+      std::mutex result_mutex;
+
+      for (int i = 0; i < nrParticles; ++i)
       {
-        // cout << "LOOP NR " << i+1 << endl;
-        int threads = std::min(NRTHREADS, nrParticles - i);
-        std::future<std::vector<ParticleData>> f[threads];
-        for (int t = 0; t < threads; t++)
-        {
-          f[t] = std::async(std::launch::async, &DecayManager::GenerateEvent_ROOT, this, i + t, verbosity);
+        pool.enqueue([&, i]
+                     {
+        auto particles = this->GenerateEvent_ROOT(i, verbosity);
+        std::lock_guard<std::mutex> lock(result_mutex);
+        for (const auto &particle : particles) {
+            Time.push_back(particle.time);
+            Code.push_back(particle.code);
+            Kinetic_energy.push_back(particle.kinetic_energy);
+            Excitation_energy.push_back(particle.excitation_energy);
+            p.push_back(particle.p);
+            Px.push_back(particle.px);
+            Py.push_back(particle.py);
+            Pz.push_back(particle.pz);
         }
-
-        for (int t = 0; t < threads; t++)
-        {
-          for (const auto &particle : f[t].get())
-          {
-            pData = particle;
-            tree->Fill();
-          }
-          ++show_progress;
-        }
+        tree->Fill();
+        Time.clear(); Code.clear(); Kinetic_energy.clear();
+        Excitation_energy.clear(); p.clear();
+        Px.clear(); Py.clear(); Pz.clear();
+        ++show_progress; });
       }
+
+      pool.wait_all();
       outputFile->Write();
       outputFile->Close();
+
+      ///////////////////////////////////////////////////
     }
 
     else if (outputName.find("txt") != std::string::npos)

@@ -10,8 +10,8 @@ CT=0.
 CTP=0.
 CA=1.27
 CAP=1.27
-a=NaN
-b=NaN
+a=-1
+b=0
 [Cuts]
 Distance=1.0
 Lifetime=1e15

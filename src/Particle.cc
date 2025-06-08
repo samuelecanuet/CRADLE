@@ -24,6 +24,7 @@ Particle::Particle(const Particle& orig) {
   neutrons = orig.neutrons;
   spin = orig.spin;
   currentExcitationEnergy = orig.currentExcitationEnergy;
+  currentDeltaExcitationEnergy = 0;
   fourMomentum(0) = mass + currentExcitationEnergy;
 
   //std::cout << charge << " " << neutrons << std::endl;
