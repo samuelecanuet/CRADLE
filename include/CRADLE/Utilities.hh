@@ -64,13 +64,13 @@ namespace utilities {
     if (ProbabilityBoundaries < 0. || ProbabilityBoundaries > 1.)
     {
       std::cerr << "Error in BreitWigner: ProbabilityBoundaries must be between 0 and 1" << std::endl;
-      return -1.;
+      return E0;
     }
 
     if (lifetime < 0.)
     {
       std::cerr << "Error in BreitWigner: lifetime must be positive" << std::endl;
-      return -1.;
+      return E0;
     }
 
     if (lifetime == 0.)
@@ -94,7 +94,7 @@ namespace utilities {
       Emax = 1e10;
     }
 
-    while ((E < Emin || E > Emax) && (E < 0.))
+    while ((E < Emin || E > Emax || E < 0.))
     {
       E = cauchy(gen);
     }
