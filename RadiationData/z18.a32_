@@ -1,0 +1,10 @@
+# 32AR ( 98 MS     )
+#  Excitation  flag   Halflife  Mode    Daughter Ex flag   Intensity          Q
+P            0  -        0.098
+#                              BetaPlus              0  -       1.
+                               BetaPlus         2208.4  -       0.385      8925.92
+                               BetaPlus         4081.6  -       0.319      7052.72
+                               BetaPlus         5046.3  -       20.508     6088.02
+
+
+

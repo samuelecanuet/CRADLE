@@ -35,23 +35,32 @@ setenv AMEdata ../Nuclear_Databases/AMEdata.txt
 ### Config file
 This file is an input of CRADLE to setting the generator. You can configure verbosity, coupling constant *C<sub>i*, cuts, $\beta$ decay type.
 
-* Verbosity : 0 or 1 to see more or less information in the terminal.
-* Verbosity_file : 0 to save only particles in the ouput file, 1 to save also the nucleus kinematics.
-* *C<sub>i* : set all the coupling constant of the Lee Yang Lagragian.
-* *a*, *b* : if not NaN overwritting the *C<sub>i*
-* Cuts : distance, time and energy limit of calculation
-* Beta Decay : *Fermi* or *Gamow-Teller* to impose $\beta$ decay type. *Auto* take into account real $\beta$ decay type extracted from Geant4 *GammaData*, only available for pure transition (set on Gamow-Teller if none pure transition)
-* FermiFunction : Simple or Advanced
+* Verbosity: 0 or 1 or 2 to see more or less information in the terminal.
+* Verbosity_file: 0 to save only particles in the output file, 1 to save all the generated particles.
+* *C<sub>i*: set all the coupling constant of the Lee Yang Lagragian.
+* *a*, *b*, *A*, *B*, *D*, *c*: if not NaN overwritting the calculated parameters with*C<sub>i*
+* Cuts: distance, time and energy limit of calculation
+* Beta Decay: *Fermi* or *Gamow-Teller* to impose $\beta$ decay type. *Auto* take into account real $\beta$ decay type extracted from Geant4 *GammaData*, only available for pure transition (set on Gamow-Teller if mixed transition)
+* FermiFunction: Simple or Advanced
+* Alignement: setting its value
+* Polarisation: setting its value and direction
+* InFlightDecay: *true*/*false* (if *false* the kinetic energy of the recoil will be set to 0.)
+* NuclearLevelWidth: *true*/*false* (if *true* Breit-Wigner distribution will be used for *proton and $\alpha$ decay if a lifetime is given in the RadiationData file)
+* GammaGammaCorrelation: *true*/*false* (if *true* the angular correlation between 2 following $\gamma$ in a cascade is calculated)
 
 ### Run 
 Running command example for 32Ar : 
 ```bash
-./CRADLE++ nucleus --name 32Ar -Z 18 -A 32 -c [ConfigFileName] general -l [EventNumber] -o [OuputFileName]
+./CRADLE++ nucleus --name 32Ar -Z 18 -A 32 general -l [NumberOfEvents] -o [OuputFileName] -c [ConfigFileName] -t [NumberOfThread]
 ```
 Note that you can generate .txt file or .root file (TTree)
+In the case of a ROOT file, input files as the Radioactive/Evaporation data and the config file will be saved using a TObjString.
 
 ## Details
 See *Generator_Documentation.pdf* for more details about the generator.
+
+## Reading output
+In the folder Reader, one python and one C++ (ROOT macro based) script can read the ROOT output file.
 
 ## Version 
 ### v1.0 
@@ -66,18 +75,31 @@ See *Generator_Documentation.pdf* for more details about the generator.
 - Implementation of Electron Capture
 ### v2.3
 - Improved Multi-Threading Mode
+### v2.4 
+- Cleaning code 
+- Using PDG instead particle names
+- Fixing errors
+- Printing paramaters at the begining
+- Writting input decay data in the final ROOT file
+- Using Von Neumann rejection when possible
+- Oriented nuclei linked $\beta$ decay correlations 
+- Include $\gamma$-$\gamma$ angular correlation (HAL Id: hal-04964841)
 
 ### TODO 
 - Four body decay for radiative correction
 - Include matrix nuclear data for mixed decay
 - Using NUDAT data
-- Polarized nuclei
 - Include R-Matrix 
+- Include $\beta$-decay mixing ratio
+- Inlcude $\gamma$ angular distribution (relevant for polarised nuclei)
+- Decay scheme generator
 
 ## Authors
 
 * **Leendert Hayen** - *KU Leuven*
 * **Lecanuet Samuel** - *LP2iB*
+* **Canovas Pablo** - **
+* **Dumenil Victor** - *LPC Caen*
 
 ## License
 

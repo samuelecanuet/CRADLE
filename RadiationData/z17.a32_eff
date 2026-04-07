@@ -1,0 +1,10 @@
+# 32CL ( 298 MS    )                                                     
+# Denotes metastable state; Excitation Energy; Lifetime
+# Decay modes from this state; Name; Daughter Excitation; Intensity; Q  
+P            0  -        0.298
+P                2208.4    -  0.0
+                 Proton         0.0    -  0.385        627.3
+P                4081.6    -   2.68e-20
+                 Proton       1248.9    -  0.3190      1250.1
+P                5046.3    -   2.28e-17
+                 Proton         0.0    - 20.5080      3465.0

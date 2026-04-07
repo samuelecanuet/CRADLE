@@ -3,6 +3,7 @@
 
 #include "CLI11.hpp"
 #include "CRADLE/DecayManager.hh"
+#include "CRADLE/Messenger.hh"
 
 int main (int argc, const char* argv[]) {
   std::string iniFilename;
@@ -27,7 +28,7 @@ int main (int argc, const char* argv[]) {
   if (success) {
     dm.MainLoop();
   } else {
-    std::cout << "Specify configuration file, isotope name, charge and number of nucleons. Use the --help option for more documentation." << std::endl;
+    Error("Specify configuration file, isotope name, charge and number of nucleons. Use the --help option for more documentation.");
   }
 
   return 0;

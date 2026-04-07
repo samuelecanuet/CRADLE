@@ -1,3 +1,6 @@
+#ifndef CRADLE_THREAD_POOL_HH
+#define CRADLE_THREAD_POOL_HH
+
 #include <thread>
 #include <queue>
 #include <mutex>
@@ -6,9 +9,10 @@
 #include <functional>
 #include <atomic>
 
-class ThreadPool {
+class ThreadPool
+{
 public:
-    ThreadPool(size_t num_threads);
+    ThreadPool(std::size_t num_threads);
     ~ThreadPool();
 
     void enqueue(std::function<void()> task);
@@ -23,3 +27,5 @@ private:
     std::atomic<bool> stop = false;
     std::atomic<int> tasks_in_progress = 0;
 };
+
+#endif // CRADLE_THREAD_POOL_HH

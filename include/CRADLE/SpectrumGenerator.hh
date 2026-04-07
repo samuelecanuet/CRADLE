@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include "CRADLE/Utilities.hh"
 
 namespace CRADLE {
 
@@ -10,7 +11,7 @@ class Particle;
 
 class SpectrumGenerator {
   public:
-    virtual std::vector<std::vector<double> >* GenerateSpectrum(Particle*, Particle*, double, std::string) = 0;
+    virtual std::vector<std::vector<double> >* GenerateSpectrum(Particle*, Particle*, double, int) = 0;
     SpectrumGenerator();
     virtual ~SpectrumGenerator();
 };
@@ -21,7 +22,7 @@ class DeltaSpectrumGenerator: public SpectrumGenerator {
       static DeltaSpectrumGenerator instance;
       return instance;
     }
-    std::vector<std::vector<double> >* GenerateSpectrum(Particle*, Particle*, double, std::string);
+    std::vector<std::vector<double> >* GenerateSpectrum(Particle*, Particle*, double, int);
 
   protected:
     DeltaSpectrumGenerator();
@@ -35,7 +36,7 @@ class SimpleBetaDecay: public SpectrumGenerator {
       static SimpleBetaDecay instance;
       return instance;
     }
-    std::vector<std::vector<double> >* GenerateSpectrum(Particle*, Particle*, double, std::string);
+    std::vector<std::vector<double> >* GenerateSpectrum(Particle*, Particle*, double, int);
 
   protected:
     SimpleBetaDecay();
@@ -49,7 +50,7 @@ class AdvancedBetaDecay: public SpectrumGenerator {
       static AdvancedBetaDecay instance;
       return instance;
     }
-    std::vector<std::vector<double> >* GenerateSpectrum(Particle*, Particle*, double, std::string);
+    std::vector<std::vector<double> >* GenerateSpectrum(Particle*, Particle*, double, int);
 
   protected:
     AdvancedBetaDecay();

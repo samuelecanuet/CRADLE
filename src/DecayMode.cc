@@ -59,11 +59,10 @@ void DecayMode::ThreeBodyDecay(ublas::vector<double>& velocity, Particle* finalS
 
 }
 
-void DecayMode::TwoBodyDecay(ublas::vector<double>& velocity, Particle* finalState1, Particle* finalState2, double Q) {
+
+void DecayMode::TwoBodyDecay(ublas::vector<double>& velocity, Particle* finalState1, Particle* finalState2, double Q, ublas::vector<double>& dir) {
   ublas::vector<double> momentum1 (4);
   ublas::vector<double> momentum2 (4);
-
-  ublas::vector<double> dir = utilities::RandomDirection();
 
   double mass1 = finalState1->GetMass();
   double mass2 = finalState2->GetMass();
@@ -90,254 +89,189 @@ void DecayMode::TwoBodyDecay(ublas::vector<double>& velocity, Particle* finalSta
   finalState2->SetMomentum(utilities::LorentzBoost(velocity, momentum2));
 }
 
-std::vector<Particle*> BetaMinus::Decay(Particle* initState, double Q, double daughterExEn) {
-  std::vector<Particle*> finalStates;
-
-  // std::cout << "In BetaMinus Decay " << std::endl;
-  // std::cout << "Address: " << initState << std::endl;
-  std::ostringstream oss;
-  oss << initState->GetCharge()+initState->GetNeutrons() << utilities::atoms[initState->GetCharge()];
-  //std::cout << oss.str() << std::endl;
-  Particle* recoil = DecayManager::GetInstance().GetNewParticle(oss.str(), initState->GetCharge()+1, initState->GetCharge()+initState->GetNeutrons());
-  recoil->SetExcitationEnergy(daughterExEn);
-  Particle* e = DecayManager::GetInstance().GetNewParticle("e-");
-  Particle* enu = DecayManager::GetInstance().GetNewParticle("enubar");
-
-  // std::cout << "Recoil " << recoil->GetCharge() << " " << recoil->GetNeutrons() << " " << recoil << std::endl;
-
-  oss.str("");
-  oss.clear();
-  oss << "BetaMinus:Z" << recoil->GetCharge() << "A" << recoil->GetCharge() + recoil->GetNeutrons() << "Q" << Q;
-  //Work in the COM frame
-  ublas::vector<double> elFourMomentum (4);
-
-   double mf = 0.;
-  double mgt = 0.;
-    DecayManager& dm = DecayManager::GetInstance();
-
-
-  /////////ajout de SL 12/05/2023//////////////
-  std::string Type;
-  
-  if (dm.configOptions.betaDecay.Default == "Fermi") {
-    mf = 1.;
-    Type = "Fermi";
-  }
-  else if (dm.configOptions.betaDecay.Default == "Gamow-Teller") {
-    mgt = 1.;
-    Type = "Gomow-Teller";
-  }
-  else if (dm.configOptions.betaDecay.Default == "Auto") {
-    
-    try{
-      Type = DecayManager::GetInstance().GetBetaType(oss.str());
-    } catch (const std::invalid_argument& e) {
-      Type = utilities::FindBetaType(initState, recoil);
-      DecayManager::GetInstance().RegisterBetaType(oss.str(), Type);
-    }
-    
-    if (Type == "Fermi") {
-    mf = 1.;
-  }
-  else{
-    mgt = 1.;
-  }
-  }
-  ////////////////////////////////////////////////
-
-  double CS = dm.configOptions.couplingConstants.CS;
-  double CSP = dm.configOptions.couplingConstants.CSP;
-  double CV = dm.configOptions.couplingConstants.CV;
-  double CVP = dm.configOptions.couplingConstants.CVP;
-  double CA = dm.configOptions.couplingConstants.CA;
-  double CAP = dm.configOptions.couplingConstants.CAP;
-  double CT = dm.configOptions.couplingConstants.CT;
-  double CTP = dm.configOptions.couplingConstants.CTP;
-  double a_conf = dm.configOptions.couplingConstants.a;
-  double b_conf = dm.configOptions.couplingConstants.b;
-
-  double a = utilities::CalculateBetaNeutrinoAsymmetry(CS, CSP, CT, CTP, CV, CVP, CA, CAP, mf, mgt, a_conf, b_conf);
-  double fierz = utilities::CalculateFierz(CS, CSP, CT, CTP, CV, CVP, CA, CAP, mf, mgt, a_conf, b_conf);
-
-  //std::cout << "fierz " << fierz << " a " << a << std::endl;
-
-  std::vector<std::vector<double> >* dist;
-  try {
-    dist = DecayManager::GetInstance().GetDistribution(oss.str());
-  } catch (const std::invalid_argument& e) {
-    bool advancedFermi = false;
-    if (dm.configOptions.betaDecay.FermiFunction == "Advanced") { //// réécriture de la condition par SL 10/05/2023
-      advancedFermi = true;
-    }
-    dist = spectrumGen->GenerateSpectrum(initState, recoil, Q, Type); //// changement de Q en E0 par SL 10/05/2023
-    double gamma = std::sqrt(1-std::pow(utilities::FINESTRUCTURE*recoil->GetCharge(), 2.));
-    int i=0;
-    for ( int i = 0; i<dist->size(); i++) {                                  ////// changement de boucle et element par ((*dist)[i]) par SL 10/05/2023
-      double E = ((*dist)[i])[0]+utilities::EMASSC2;
-      double SH = ((*dist)[i])[1];
-      ((*dist)[i])[1] = SH*(1+gamma*fierz*utilities::EMASSC2/E);
-    }
-    DecayManager::GetInstance().RegisterDistribution(oss.str(), dist);
-    }
-
-  std::vector<double> p;
-
-  double elEnergy = utilities::RandomFromDistribution(*dist)+utilities::EMASSC2;
-  double elMomentum = std::sqrt(elEnergy*elEnergy-std::pow(utilities::EMASSC2, 2.));
-  ublas::vector<double> enuDir = utilities::RandomDirection();
-
-  p.push_back(1.);
-  p.push_back(a*elMomentum/elEnergy);
-  ublas::vector<double> eDir = utilities::GetParticleDirection(enuDir, p);
-
-  elFourMomentum(0) = elEnergy;
-  elFourMomentum(1) = elMomentum*eDir[0];
-  elFourMomentum(2) = elMomentum*eDir[1];
-  elFourMomentum(3) = elMomentum*eDir[2];
-
-  e->SetMomentum(elFourMomentum);
-
-  ublas::vector<double> velocity = -initState->GetVelocity();
-  ThreeBodyDecay(velocity, e, enu, recoil, enuDir, Q);
-
-  finalStates.push_back(recoil);
-  finalStates.push_back(e);
-  finalStates.push_back(enu);
-
-  return finalStates;
+void DecayMode::TwoBodyDecay(ublas::vector<double>& velocity, Particle* finalState1, Particle* finalState2, double Q) {
+  ublas::vector<double> dir = utilities::RandomDirection();
+  TwoBodyDecay(velocity, finalState1, finalState2, Q, dir);
 }
 
-std::vector<Particle*> BetaPlus::Decay(Particle* initState, double Q, double daughterExEn) {
+std::vector<Particle*> Beta::Decay(Particle* initState, double Q, double daughterExEn) {
+  
   std::vector<Particle*> finalStates;
-
   DecayManager& dm = DecayManager::GetInstance();
 
-  double E0 = Q-2*utilities::EMASSC2;
+  if (dm.configOptions.general.Verbosity >= 2)
+    Info(Form("Beta Decay with Q = %.1f, parent excitation energy = %.1f and daughter excitation energy = %.1f", Q, initState->GetExcitationEnergy(), daughterExEn), 1);
 
-  //std::cout << "In BetaPlus Decay " << std::endl;
-  //std::cout << "Address: " << initState << std::endl;
+  // Getting Beta +/- from sign of Q
+  int BetaSign = 0;
+  if (Q < 0)
+    BetaSign = 1;
+  else
+    BetaSign = -1;
+  Q = abs(Q);
+
+  // Modifying the endpoint energy for Beta+ decay
+  double E0 = Q;
+  if (BetaSign == 1) { // Beta+ case
+    E0 -= 2*utilities::EMASSC2;
+  }
+
+  // Init Final States
+  int Recoil_PDG = GetPDG(initState->GetCharge()-BetaSign, initState->GetCharge()+initState->GetNeutrons());
+  Particle* Recoil = dm.GetNewParticle(Recoil_PDG, initState->GetCharge()-BetaSign, initState->GetCharge()+initState->GetNeutrons());
+  Recoil->SetExcitationEnergy(daughterExEn);
+  Particle* ChargedLepton = dm.GetNewParticle(- BetaSign * 11);
+  Particle* NeutralLepton = dm.GetNewParticle(BetaSign * 12);
+  int Recoil_Z = Recoil->GetCharge();
+  double Recoil_ExEn = Recoil->GetExcitationEnergy();
+
+  // name as key for channel properties
   std::ostringstream oss;
-  oss << initState->GetCharge()+initState->GetNeutrons() << utilities::atoms[initState->GetCharge()-2];
-  Particle* recoil = DecayManager::GetInstance().GetNewParticle(oss.str(), initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons());
-  recoil->SetExcitationEnergy(daughterExEn);
-  Particle* pos = DecayManager::GetInstance().GetNewParticle("e+");
-  Particle* enubar = DecayManager::GetInstance().GetNewParticle("enu");
+  oss << "Beta:" << "Sign" << BetaSign << "Z" << Recoil_Z << "A" << Recoil_Z + Recoil->GetNeutrons() << "Q" << Q;
 
-  oss.str("");
-  oss.clear();
-
-  oss << "BetaPlus:Z" << recoil->GetCharge() << "A" << recoil->GetCharge() + recoil->GetNeutrons() << "Q" << Q;
-  //Work in the COM frame
-  ublas::vector<double> enubarDir = utilities::RandomDirection();
-
-  ublas::vector<double> posFourMomentum (4);
-
-  double mf = 0.;
+  // Build or Get info of the channel using oss
+  double mf = 1.;
   double mgt = 0.;
 
-  /////////ajout de SL 12/05/2023//////////////
-  
-  std::string Type;
-  
-  if (dm.configOptions.betaDecay.Default == "Fermi") {
-    mf = 1.;
-    Type = "Fermi";
-  }
-  else if (dm.configOptions.betaDecay.Default == "Gamow-Teller") {
-    mgt = 1.;
-    Type = "Gamow-Teller";
-  }
-  else if (dm.configOptions.betaDecay.Default == "Auto") {
-    
-    try{
-      Type = DecayManager::GetInstance().GetBetaType(oss.str());
-    } catch (const std::invalid_argument& e) {
-      Type = utilities::FindBetaType(initState, recoil);
-      DecayManager::GetInstance().RegisterBetaType(oss.str(), Type);
-    }
-    
-    if (Type == "Fermi") {
-    mf = 1.;
-  }
-  else {
-    mgt = 1.;
-  }
-  }
-  ////////////////////////////////////////////////
-
-  double CS = dm.configOptions.couplingConstants.CS;
-  double CSP = dm.configOptions.couplingConstants.CSP;
-  double CV = dm.configOptions.couplingConstants.CV;
-  double CVP = dm.configOptions.couplingConstants.CVP;
-  double CA = dm.configOptions.couplingConstants.CA;
-  double CAP = dm.configOptions.couplingConstants.CAP;
-  double CT = dm.configOptions.couplingConstants.CT;
-  double CTP = dm.configOptions.couplingConstants.CTP;
-  double a_conf = dm.configOptions.couplingConstants.a;
-  double b_conf = dm.configOptions.couplingConstants.b;
-
-  double a = utilities::CalculateBetaNeutrinoAsymmetry(CS, CSP, CT, CTP, CV, CVP, CA, CAP, mf, mgt, a_conf, b_conf);
-  double fierz = utilities::CalculateFierz(CS, CSP, CT, CTP, CV, CVP, CA, CAP, mf, mgt, a_conf, b_conf);
-
-  //std::cout <<" b = " << fierz <<"\t a = " << a << std::endl;
-
   std::vector<std::vector<double> >* dist;
-  try {
-    dist = DecayManager::GetInstance().GetDistribution(oss.str());
-  } catch (const std::invalid_argument& e) {
-    bool advancedFermi = false;
-    if (dm.configOptions.betaDecay.FermiFunction == "Advanced") { //// réécriture de la condition par SL 10/05/2023
-      advancedFermi = true;
-    }
-    dist = spectrumGen->GenerateSpectrum(initState, recoil, E0, Type); //// changement de Q en E0 par SL 10/05/2023
-    double gamma = std::sqrt(1-std::pow(utilities::FINESTRUCTURE*recoil->GetCharge(), 2.));
-    int i=0;
-    for ( int i = 0; i<dist->size(); i++) {                                  ////// changement de boucle et element par ((*dist)[i]) par SL 10/05/2023
-      double E = ((*dist)[i])[0]+utilities::EMASSC2;
+  double dist_max = 0.;
+  double j_i;
+  double j_f;
+  int Type;
+  try
+  {
+    dist = dm.GetChannelDistribution(oss.str());
+    dist_max = dm.GetChannelDistributionMax(oss.str());
+    j_i = dm.GetChannelJi(oss.str());
+    j_f = dm.GetChannelJf(oss.str());
+    Type = dm.GetChannelBetaType(oss.str());
+  }
+  catch (const std::invalid_argument &e)
+  {
+    dist = spectrumGen->GenerateSpectrum(initState, Recoil, E0, Type);
+    double b = correlation::CalculateFierz(mf, mgt, initState->GetCharge(), BetaSign);
+    for (int i = 0; i < dist->size(); i++)
+    {
+      double E = ((*dist)[i])[0] + utilities::EMASSC2;
       double SH = ((*dist)[i])[1];
-      ((*dist)[i])[1] = SH*(1+gamma*fierz*utilities::EMASSC2/E);
+      ((*dist)[i])[1] = SH * (1 + b * utilities::EMASSC2 / E + (-BetaSign) * 4. / 3. * E / (initState->GetMass()) * dm.configOptions.nuclear.WeakMagnetism);
     }
-    DecayManager::GetInstance().RegisterDistribution(oss.str(), dist);
+    dist_max = utilities::CalculateMax(*dist);
+    j_i = utilities::GetJpi(initState->GetCharge() + initState->GetNeutrons(), initState->GetCharge(), initState->GetExcitationEnergy());
+    j_f = utilities::GetJpi(Recoil_Z + Recoil->GetNeutrons(), Recoil_Z, Recoil->GetExcitationEnergy());
+    Type = utilities::FindBetaType(initState, Recoil);
+    dm.RegisterChannelPropreties(oss.str(), dist, dist_max, Type, j_i, j_f);
+
+    if (Type == FERMI)
+    {
+      mf = 1.;
+      mgt = 0.;
+    }
+    else if (Type == GAMOW_TELLER)
+    {
+      mf = 0.;
+      mgt = 1;
+    }
+    else 
+    {
+      Error("MIXED IS NOT HANDLE FOR NOW");
     }
 
+  }
 
-  // ublas::vector<std::vector<double> >* dist;
-  double posEnergy = utilities::RandomFromDistribution(*dist) + utilities::EMASSC2;
-  double posMomentum = std::sqrt(posEnergy*posEnergy-std::pow(utilities::EMASSC2, 2.));
+  // Angle correlation
+  double ChargedLepton_Energy = utilities::RandomFromDistribution(*dist, dist_max) + utilities::EMASSC2;
+  ublas::vector<double> ChargedLepton_FourMomentum(4);
+  double ChargedLepton_Momentum = std::sqrt(ChargedLepton_Energy*ChargedLepton_Energy-std::pow(utilities::EMASSC2, 2.));
+  ublas::vector<double> NeutralLepton_Dir;
+  ublas::vector<double> ChargedLepton_Dir;
+  
+  if (dm.configOptions.nuclear.Alignment == 0 && dm.configOptions.nuclear.PolarisationMag == 0)
+  {
+    ///// IF THE NUCLEUS IS NOT POLARISED ////
+    NeutralLepton_Dir = utilities::RandomDirection();
+    double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, ChargedLepton_Energy, Recoil_Z, BetaSign);
+    double b = correlation::CalculateFierz(mf, mgt, Recoil_Z, BetaSign);
+    ChargedLepton_Dir = utilities::GetParticleDirection(NeutralLepton_Dir, 1 + b * utilities::EMASSC2/ChargedLepton_Energy, a * ChargedLepton_Momentum / ChargedLepton_Energy);
+  }
+  else
+  {
+    ///// IF THE NUCLEUS IS POLARISED ////
+    double b = correlation::CalculateFierz(mf, mgt, Recoil_Z, BetaSign);
+    double align = dm.configOptions.nuclear.Alignment;
+    ublas::vector<double> polDir(3);
+    polDir(0) = dm.configOptions.nuclear.PolarisationX;
+    polDir(1) = dm.configOptions.nuclear.PolarisationY;
+    polDir(2) = dm.configOptions.nuclear.PolarisationZ;
+    polDir = utilities::NormaliseVector(polDir);
+    double polMag = dm.configOptions.nuclear.PolarisationMag;
 
-  std::vector<double> p;
-  p.push_back(1.);
-  p.push_back(a*posMomentum/posEnergy);
-  ublas::vector<double> posDir = utilities::GetParticleDirection(enubarDir, p);
-  posFourMomentum(0) = posEnergy;
-  posFourMomentum(1) = posMomentum*posDir[0];
-  posFourMomentum(2) = posMomentum*posDir[1];
-  posFourMomentum(3) = posMomentum*posDir[2];
+    double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, ChargedLepton_Energy, Recoil_Z, BetaSign);
+    double c = 0;
+    double A = 0;
+    double B = 0;
+    double D = 0;
 
-  pos->SetMomentum(posFourMomentum);
+    if (j_i > 0)
+    {
+      A = correlation::CalculateBetaAssymetry(mf, mgt, j_i, j_f, BetaSign, Recoil_Z, ChargedLepton_Energy);
+      B = correlation::CalculateNeutrinoAssymetry(mf, mgt, j_i, j_f, BetaSign, Recoil_Z, ChargedLepton_Energy);
+      D = correlation::CalculateDTripleCorrelation(mf, mgt, j_i, j_f, BetaSign, Recoil_Z, ChargedLepton_Energy);
+      if (j_i > 0.5)
+      {
+        c = correlation::CalculateAlignmentCorrelation(mf, mgt, j_i, j_f, BetaSign, Recoil_Z, ChargedLepton_Energy);
+      }
+    }
+    c *= align * (-1);
+    A *= polMag;
+    B *= polMag;
+    D *= polMag;
 
+    double F_max = correlation::AnalyticalMaximumAngCorrFactor(a, b, c, A, B, D, ChargedLepton_Energy);
+    double F_point = 0;
+    std::uniform_real_distribution<double> distribution_F(0.0, F_max);
+    double F = F_max;
+    while (F > F_point)
+    {
+      F = distribution_F(dm.generator);
+      ChargedLepton_Dir = utilities::RandomDirection();
+      NeutralLepton_Dir = utilities::RandomDirection();
+      F_point = correlation::CalculateAngularCorrelationFactor(a, b, c, A, B, D, ChargedLepton_Energy, ChargedLepton_Dir, NeutralLepton_Dir, polDir);
+    }
+  }
+
+  // Setting Charged Lepton 4-momentum
+  ChargedLepton_FourMomentum(0) = ChargedLepton_Energy;
+  ChargedLepton_FourMomentum(1) = ChargedLepton_Momentum*ChargedLepton_Dir[0];
+  ChargedLepton_FourMomentum(2) = ChargedLepton_Momentum*ChargedLepton_Dir[1];
+  ChargedLepton_FourMomentum(3) = ChargedLepton_Momentum*ChargedLepton_Dir[2];
+  ChargedLepton->SetMomentum(ChargedLepton_FourMomentum);
+
+  // 3-body decay kinematics
   ublas::vector<double> velocity = -initState->GetVelocity();
-  ThreeBodyDecay(velocity, pos, enubar, recoil, enubarDir, E0);
+  ThreeBodyDecay(velocity, ChargedLepton, NeutralLepton, Recoil, NeutralLepton_Dir, E0);
 
-
-  finalStates.push_back(recoil);
-  finalStates.push_back(pos);
-  finalStates.push_back(enubar);
-
+  // Adding final states to vector
+  finalStates.push_back(Recoil);
+  finalStates.push_back(ChargedLepton);
+  finalStates.push_back(NeutralLepton);
+  
+ 
   return finalStates;
 }
+  
 
 std::vector<Particle*> ConversionElectron::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
 
   ublas::vector<double> velocity = -initState->GetVelocity();
-  Particle* recoil = DecayManager::GetInstance().GetNewParticle(initState->GetRawName());
-  Particle* e = DecayManager::GetInstance().GetNewParticle("e-");
-  recoil->SetExcitationEnergy(daughterExEn);
+  Particle* Recoil =  DecayManager::GetInstance().GetNewParticle(initState->GetPDG());
+  Particle* e =  DecayManager::GetInstance().GetNewParticle(11);
+  Recoil->SetExcitationEnergy(daughterExEn);
 
-  TwoBodyDecay(velocity, recoil, e, Q);
+  TwoBodyDecay(velocity, Recoil, e, Q);
 
-  finalStates.push_back(recoil);
+  finalStates.push_back(Recoil);
   finalStates.push_back(e);
 
   return finalStates;
@@ -345,21 +279,20 @@ std::vector<Particle*> ConversionElectron::Decay(Particle* initState, double Q, 
 
 std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
-
+  DecayManager& dm = DecayManager::GetInstance();
   //// nuclear level width
-  Q = utilities::BreitWigner(Q, initState->GetLifetime(), 0.999);
-  // std::cout << "Q = " << Q << std::endl;
-
-  std::ostringstream oss;
-  oss << initState->GetCharge()+initState->GetNeutrons() - 1 << utilities::atoms[initState->GetCharge()-2];
-  Particle* recoil = DecayManager::GetInstance().GetNewParticle(oss.str(), initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons()-1);
-  Particle* p = DecayManager::GetInstance().GetNewParticle("p");
-  recoil->SetExcitationEnergy(daughterExEn);
+  if (dm.configOptions.decay.Nuclear_Level_Width) 
+    Q = utilities::BreitWigner(Q, initState->GetLifetime());
+  
+  int daughter_PDG = GetPDG(initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons()-1);
+  Particle* Recoil = dm.GetNewParticle(daughter_PDG, initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons()-1);
+  Recoil->SetExcitationEnergy(daughterExEn);
+  Particle* p = dm.GetNewParticle(2212);
 
   ublas::vector<double> velocity = -initState->GetVelocity();
-  TwoBodyDecay(velocity, recoil, p, Q);
+  TwoBodyDecay(velocity, Recoil, p, Q);
 
-  finalStates.push_back(recoil);
+  finalStates.push_back(Recoil);
   finalStates.push_back(p);
 
   return finalStates;
@@ -367,20 +300,20 @@ std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daugh
 
 std::vector<Particle*> Alpha::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
-
+  DecayManager& dm = DecayManager::GetInstance();
   //// nuclear level width
-  Q = utilities::BreitWigner(Q, initState->GetLifetime(), 0.999);
+  if (dm.configOptions.decay.Nuclear_Level_Width) 
+    Q = utilities::BreitWigner(Q, initState->GetLifetime());
 
-  std::ostringstream oss;
-  oss << initState->GetCharge()+initState->GetNeutrons() - 4 << utilities::atoms[initState->GetCharge()-3];
-  Particle* recoil = DecayManager::GetInstance().GetNewParticle(oss.str(), initState->GetCharge()-2, initState->GetCharge()+initState->GetNeutrons()-4);
-  Particle* alpha = DecayManager::GetInstance().GetNewParticle("alpha");
-  recoil->SetExcitationEnergy(daughterExEn);
+  int daughter_PDG = GetPDG(initState->GetCharge()-2, initState->GetCharge()+initState->GetNeutrons()-4);
+  Particle* Recoil = dm.GetNewParticle(daughter_PDG, initState->GetCharge()-2, initState->GetCharge()+initState->GetNeutrons()-4);
+  Particle* alpha = dm.GetNewParticle(1000020040);
+  Recoil->SetExcitationEnergy(daughterExEn);
 
   ublas::vector<double> velocity = -initState->GetVelocity();
-  TwoBodyDecay(velocity, recoil, alpha, Q);
+  TwoBodyDecay(velocity, Recoil, alpha, Q);
 
-  finalStates.push_back(recoil);
+  finalStates.push_back(Recoil);
   finalStates.push_back(alpha);
 
   return finalStates;
@@ -389,14 +322,135 @@ std::vector<Particle*> Alpha::Decay(Particle* initState, double Q, double daught
 std::vector<Particle*> Gamma::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
 
+  DecayManager& dm = DecayManager::GetInstance();
   ublas::vector<double> velocity = -initState->GetVelocity();
-  Particle* recoil = DecayManager::GetInstance().GetNewParticle(initState->GetRawName());
-  Particle* gamma = DecayManager::GetInstance().GetNewParticle("gamma");
-  recoil->SetExcitationEnergy(daughterExEn);
+  Particle* Recoil = DecayManager::GetInstance().GetNewParticle(initState->GetPDG());
+  Particle* gamma = DecayManager::GetInstance().GetNewParticle(22);
+  Recoil->SetExcitationEnergy(daughterExEn);
 
-  TwoBodyDecay(velocity, recoil, gamma, Q);
+  if (initState->GetLastGamma() != nullptr && dm.configOptions.decay.GammaGammaCorrelation)
+  {
+    // Gamma - Gamma correlation (E_i --> E --> E_f)
+    Particle *gamma_1 = initState->GetLastGamma();
+    ublas::vector<double> gamma_1_dir = gamma_1->Get3Momentum();
 
-  finalStates.push_back(recoil);
+    double j_i = utilities::GetJpi(initState->GetCharge() + initState->GetNeutrons(), initState->GetCharge(), initState->GetExcitationEnergy() + gamma_1->GetKinEnergy());
+    double j = utilities::GetJpi(initState->GetCharge() + initState->GetNeutrons(), initState->GetCharge(), initState->GetExcitationEnergy());
+    double j_f = utilities::GetJpi(Recoil->GetCharge() + Recoil->GetNeutrons(), Recoil->GetCharge(), Recoil->GetExcitationEnergy());
+    double delta_1 = initState->GetMixingRatio(initState->GetExcitationEnergy() + gamma_1->GetKinEnergy(), initState->GetExcitationEnergy());
+    std::pair<int, int> l1 = initState->GetMultipolarities(initState->GetExcitationEnergy() + gamma_1->GetKinEnergy(), initState->GetExcitationEnergy());
+    double delta_2 = Recoil->GetMixingRatio(initState->GetExcitationEnergy(), daughterExEn);
+    std::pair<int, int> l2 = Recoil->GetMultipolarities(initState->GetExcitationEnergy(), daughterExEn);
+
+    // Info("State i:");
+    // Info(Form("E = %.1f keV", initState->GetExcitationEnergy() + gamma_1->GetKinEnergy()), 1);
+    // Info(Form("J = %.1f", j_i), 1);
+    // Info("State m:");
+    // Info(Form("E = %.1f keV", initState->GetExcitationEnergy()), 1);
+    // Info(Form("J = %.1f", j), 1);
+    // Info("State f:");
+    // Info(Form("E = %.1f keV", Recoil->GetExcitationEnergy()), 1);
+    // Info(Form("J = %.1f", j_f), 1);
+    // Info("Gamma 1:");
+    // Info(Form("E = %.1f keV", gamma_1->GetKinEnergy()), 1);
+    // Info(Form("Multipolarity = %d, %d", l1.first, l1.second), 1);
+    // Info(Form("Mixing Ratio = %.4f", delta_1), 1);
+    // Info("Gamma 2:");
+    // Info(Form("E = %.1f keV", gamma->GetKinEnergy()), 1);
+    // Info(Form("Multipolarity = %d, %d", l2.first, l2.second), 1);
+    // Info(Form("Mixing Ratio = %.4f", delta_2), 1);
+
+    // test 0->2->0 (ok)
+    // j_i = 0.;
+    // j = 2.;
+    // j_f = 0.;
+    // l1 = std::make_pair<int, int>(2, 0);
+    // delta_1 = 0.;
+    // l2 = std::make_pair<int, int>(2, 0);
+    // delta_2 = 0.;
+    //
+    // 1->2->0 (close)
+    // j_i = 1.;
+    // j = 2.;
+    // j_f = 0.;
+    // l1 = std::make_pair<int, int>(1, 2);
+    // delta_1 = 5.;
+    // l2 = std::make_pair<int, int>(2, 0);
+    // delta_2 = 0.;
+    //
+    // 3->2->0 (ok)
+    // j_i = 3.;
+    // j = 2.;
+    // j_f = 0.;
+    // l1 = std::make_pair<int, int>(1, 0);
+    // delta_1 = 0.;
+    // l2 = std::make_pair<int, int>(2, 0);
+    // delta_2 = 0.;
+    //
+    // 2->2->0 (ok)
+    // j_i = 2.;
+    // j = 2.;
+    // j_f = 0.;
+    // l1 = std::make_pair<int, int>(1, 2);
+    // delta_1 = 0.;
+    // l2 = std::make_pair<int, int>(2, 0);
+    // delta_2 = 0.;
+    //
+    // 2->2->0 (ok)
+    // j_i = 2.;
+    // j = 2.;
+    // j_f = 0.;
+    // l1 = std::make_pair<int, int>(1, 2);
+    // delta_1 = -1.;
+    // l2 = std::make_pair<int, int>(2, 0);
+    // delta_2 = 0.;
+    //
+    // 60Co 4->2->0
+    // j_i = 4.;
+    // j = 2.;
+    // j_f = 0.;
+    // l1 = std::make_pair<int, int>(2, 0);
+    // delta_1 = 0.;
+    // l2 = std::make_pair<int, int>(2, 0);
+    // delta_2 = 0.;
+    //
+    // 88Y 3->2->0
+    // j_i = 3.;
+    // j = 2.;
+    // j_f = 0.;
+    // l1 = std::make_pair<int, int>(1, 0);
+    // delta_1 = 0.;
+    // l2 = std::make_pair<int, int>(2, 0);
+    // delta_2 = 0.;
+
+    // coef 
+    std::vector<double> ak = correlation::CaluclateGammaCoefficient_a(std::abs(j_i), std::abs(j), std::abs(j_f), l1, delta_1, l2, delta_2);
+
+    // Info(Form("Gamma-Gamma correlation coefficients: a0 = %.4f, a2 = %.4f, a4 = %.4f", ak[0], ak[1], ak[2]), 1);
+    double W_max = correlation::MaxAnalyticalGammaCorrelation(ak);
+    double W = W_max;
+    double W_point = 0.;
+    std::uniform_real_distribution<double> distribution(0.0, W_max);
+    ublas::vector<double> gamma_2_dir;
+    while (W > W_point)
+    {
+      W = distribution(dm.generator);
+      gamma_2_dir = utilities::RandomDirection();
+      double cos_theta = inner_prod(gamma_1_dir, gamma_2_dir) / utilities::GetNorm(gamma_1_dir) / utilities::GetNorm(gamma_2_dir);
+      W_point = correlation::GammaGammaW(cos_theta, ak);
+    }
+
+    TwoBodyDecay(velocity, Recoil, gamma, Q, gamma_2_dir);
+  }
+  else
+    TwoBodyDecay(velocity, Recoil, gamma, Q);
+
+  // Saving the last gamma with a temporary particle pointer to let the particlestack deletable
+  Particle *temp_gamma = DecayManager::GetInstance().GetNewParticle(22, 0, 0, true);
+  temp_gamma->SetMomentum(gamma->GetMomentum());
+  Recoil->SetLastGamma(temp_gamma);
+  //
+  finalStates.push_back(Recoil);
   finalStates.push_back(gamma);
 
   return finalStates;
@@ -405,17 +459,15 @@ std::vector<Particle*> Gamma::Decay(Particle* initState, double Q, double daught
 std::vector<Particle*> ElectronCapture::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
 
-  
-  std::ostringstream oss;
-  oss << initState->GetCharge()+initState->GetNeutrons() << utilities::atoms[initState->GetCharge()-2];
-  Particle* recoil = DecayManager::GetInstance().GetNewParticle(oss.str(), initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons());
-  Particle* enu = DecayManager::GetInstance().GetNewParticle("enu");
-  recoil->SetExcitationEnergy(daughterExEn);
+  int daughter_PDG = GetPDG(initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons());
+  Particle* Recoil = DecayManager::GetInstance().GetNewParticle(daughter_PDG, initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons());
+  Particle* enu = DecayManager::GetInstance().GetNewParticle(12);
+  Recoil->SetExcitationEnergy(daughterExEn);
 
   ublas::vector<double> velocity = -initState->GetVelocity();
-  TwoBodyDecay(velocity, recoil, enu, Q);
+  TwoBodyDecay(velocity, Recoil, enu, Q);
 
-  finalStates.push_back(recoil);
+  finalStates.push_back(Recoil);
   finalStates.push_back(enu);
 
   return finalStates;
@@ -429,9 +481,7 @@ void DecayMode::SetSpectrumGenerator(SpectrumGenerator* sg) {
   spectrumGen = sg;
 }
 
-BetaMinus::BetaMinus() { }
-
-BetaPlus::BetaPlus() { }
+Beta::Beta() { }
 
 ConversionElectron::ConversionElectron() { }
 

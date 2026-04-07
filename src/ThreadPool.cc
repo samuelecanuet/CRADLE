@@ -1,8 +1,11 @@
 #include "CRADLE/ThreadPool.hh"
 
-ThreadPool::ThreadPool(size_t num_threads) {
-    for (size_t i = 0; i < num_threads; ++i) {
-        workers.emplace_back([this] {
+ThreadPool::ThreadPool(size_t num_threads)
+{
+    for (size_t i = 0; i < num_threads; ++i)
+    {
+        workers.emplace_back([this]
+                             {
             while (true) {
                 std::function<void()> task;
                 {
@@ -19,12 +22,12 @@ ThreadPool::ThreadPool(size_t num_threads) {
                 task();
                 --tasks_in_progress;
                 condition.notify_all();
-            }
-        });
+            } });
     }
 }
 
-void ThreadPool::enqueue(std::function<void()> task) {
+void ThreadPool::enqueue(std::function<void()> task)
+{
     {
         std::unique_lock<std::mutex> lock(queue_mutex);
         tasks.emplace(std::move(task));
@@ -32,14 +35,15 @@ void ThreadPool::enqueue(std::function<void()> task) {
     condition.notify_one();
 }
 
-void ThreadPool::wait_all() {
+void ThreadPool::wait_all()
+{
     std::unique_lock<std::mutex> lock(queue_mutex);
-    condition.wait(lock, [this] {
-        return tasks.empty() && tasks_in_progress.load() == 0;
-    });
+    condition.wait(lock, [this]
+                   { return tasks.empty() && tasks_in_progress.load() == 0; });
 }
 
-ThreadPool::~ThreadPool() {
+ThreadPool::~ThreadPool()
+{
     {
         std::unique_lock<std::mutex> lock(queue_mutex);
         stop = true;

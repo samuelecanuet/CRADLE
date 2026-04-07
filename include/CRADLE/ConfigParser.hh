@@ -2,8 +2,9 @@
 #define CRADLE_CONFIG_CONTAINER_H
 
 #include "CLI11.hpp"
-
+#include "CRADLE/Messenger.hh"
 #include <string>
+#include <complex>
 
 namespace CRADLE {
 
@@ -12,6 +13,12 @@ struct NuclearOptions {
   int Charge = 0;
   int Nucleons = 0;
   double Energy = 0.0;
+  double WeakMagnetism = 0.0;
+  double Alignment = 0.0;
+  double PolarisationMag = 0.0;
+  double PolarisationX = 0.0;
+  double PolarisationY = 0.0;
+  double PolarisationZ = 0.0;
 };
 
 struct General {
@@ -23,16 +30,20 @@ struct General {
 };
 
 struct CouplingConstants {
-  double CS = 0.0;
-  double CSP = 0.0;
-  double CV = 1.0;
-  double CVP = 1.0;
-  double CT = 0.0;
-  double CTP = 0.0;
-  double CA = 1.2754;
-  double CAP = 1.2754;
-  double a = 1.;
-  double b = 0.;
+  std::complex<double> CS = std::complex<double>(0.0,0.0);
+  std::complex<double> CSP = std::complex<double>(0.0,0.0);
+  std::complex<double> CV = std::complex<double>(1.0,0.0);
+  std::complex<double> CVP = std::complex<double>(1.0,0.0);
+  std::complex<double> CT = std::complex<double>(0.0,0.0);
+  std::complex<double> CTP = std::complex<double>(0.0,0.0);
+  std::complex<double> CA = std::complex<double>(1.2754,0.0);
+  std::complex<double> CAP = std::complex<double>(1.2754,0.0);
+  double b = std::nan("");
+  double a = std::nan("");
+  double A = std::nan("");
+  double B = std::nan("");
+  double D = std::nan("");
+  double c = std::nan("");
 };
 
 struct Cuts {
@@ -42,11 +53,14 @@ struct Cuts {
 };
 
 struct BetaDecay {
-  std::string Default = "";
-  std::string FermiFunction = "";
-  double PolarisationX;
-  double PolarisationY;
-  double PolarisationZ;
+  std::string Default = "Auto";
+  std::string FermiFunction = "Advanced";
+};
+
+struct Decay{
+  bool InFlightDecay = true;
+  bool Nuclear_Level_Width = true;
+  bool GammaGammaCorrelation = true;
 };
 
 struct EnvOptions {
@@ -56,22 +70,25 @@ struct EnvOptions {
 };
 
 struct ConfigOptions{
-  NuclearOptions nuclearOptions;
+  NuclearOptions nuclear;
   General general;
   CouplingConstants couplingConstants;
   Cuts cuts;
   BetaDecay betaDecay;
+  Decay decay;
   EnvOptions envOptions;
 };
 
 ConfigOptions ParseOptions(std::string, int argc = 0, const char** argv = nullptr);
 
-void SetCmdOptions(CLI::App&, NuclearOptions&);
 void SetGeneralOptions(CLI::App&, General&);
+void SetNuclearOptions(CLI::App&, NuclearOptions&);
 void SetCouplingConstants(CLI::App&, CouplingConstants&);
 void SetCuts(CLI::App&, Cuts&);
 void SetBetaDecayOptions(CLI::App&, BetaDecay&);
+void SetDecayOptions(CLI::App&, Decay&);
 void SetEnvironmentOptions(CLI::App&, EnvOptions&);
+void PrintingAllOptions(const ConfigOptions&);
 
 }
 

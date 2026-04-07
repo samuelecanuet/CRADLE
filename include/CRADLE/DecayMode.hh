@@ -4,6 +4,7 @@
 #include <vector>
 #include <boost/numeric/ublas/vector.hpp>
 #include <string>
+#include "CRADLE/Messenger.hh"
 
 namespace CRADLE {
 
@@ -23,35 +24,22 @@ class DecayMode {
   protected:
     static void ThreeBodyDecay(ublas::vector<double>&, Particle*, Particle*, Particle*, ublas::vector<double>&, double);
     static void TwoBodyDecay(ublas::vector<double>&, Particle*, Particle*, double);
+    static void TwoBodyDecay(ublas::vector<double>&, Particle*, Particle*, double, ublas::vector<double>& dir);
     SpectrumGenerator* spectrumGen;
 };
 
-class BetaMinus: public DecayMode {
+class Beta: public DecayMode {
   public:
-    static BetaMinus& GetInstance() {
-      static BetaMinus instance;
+    static Beta& GetInstance() {
+      static Beta instance;
       return instance;
     }
     std::vector<Particle*> Decay(Particle*, double, double);
 
   protected:
-    BetaMinus();
-    BetaMinus(BetaMinus const& copy);
-    BetaMinus& operator=(BetaMinus const& copy);
-};
-
-class BetaPlus: public DecayMode {
-  public:
-    static BetaPlus& GetInstance() {
-      static BetaPlus instance;
-      return instance;
-    }
-    std::vector<Particle*> Decay(Particle*, double, double);
-
-  protected:
-    BetaPlus();
-    BetaPlus(BetaPlus const& copy);
-    BetaPlus& operator=(BetaPlus const& copy);
+    Beta();
+    Beta(Beta const& copy);
+    Beta& operator=(Beta const& copy);
 };
 
 class ConversionElectron: public DecayMode {
