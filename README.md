@@ -58,6 +58,17 @@ Note that you can generate .txt file or .root file (TTree)
 ### OUTPUT
 ## ROOT
 In the case of a ROOT file, input files as the Radioactive/Evaporation data and the config file will be saved using a TObjString.
+Additionnaly, a TTree is created with the following branches:
+- time (Creation time of the particle, *vector<double>*)
+- code (PDG code of the particle, *vector<int>*)
+- energy (Kinetic energy of the particle, *vector<double>*)
+- excitation_energy (Excitation energy of the particle, *vector<double>*)
+- p (Momentum of the particle, *vector<double>*)
+- px (x component of the direction, *vector<double>*)
+- py (y component of the direction, *vector<double>*)
+- pz (z component of the direction, *vector<double>*)
+Each element of the vector correspond to a particle constituting the event. The number of particle in the event is given by the size of the vector.
+
 ## TXT
 Exemple (Verbosity_file = 2)
 ```
@@ -82,6 +93,8 @@ Exemple (Verbosity_file = 2)
 1		0.0138	p	0	3357.21	941629	-42398	60299.5	-29624.5
 1		0.0138	31S	0	108.026	2.88574e+07	41614.1	-61819.9	26100.3
 ```
+The first row correspond to event number ($i$). Second is either total number of particle in the event ($N_i$), sub event number ($i_j$) or time of creation. Third is the total number of particle in the sub event ($N_ij$) or the particle name. Following row correspond to excitation energy, kinetic energy, momentum, momentum vector componant in this order.
+
 Exemple (Verbosity_file = 1) 
 ```
 0		0.0138	e+	0	4449.64	4960.63	938.992	3849.79	2940.11
@@ -129,6 +142,7 @@ In the folder Reader, one python and one C++ (ROOT macro based) script can read 
 - Include R-Matrix 
 - Inlcude $\gamma$ angular distribution (relevant for polarised nuclei)
 - Decay scheme generator
+- Include some Matrix element calculation for Gamow-Teller shape factor correction.
 
 ## Authors
 

@@ -92,19 +92,19 @@ int main(int argc, char* argv[]) {
         Info(Form("MFMASSC2 : %.5f keV", MFMASSC2), 2);
 
         // Observables
-        double RHOH = rho_H(n, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, betaType, mode) ;
-        double DELTA_RHOH = delta_rho_H(n, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, betaType, mode) ;
-        double RHO0 = rho0(n, MF, MGT, MIMASSC2, MFMASSC2, Z, R, betaType, mode);
-        double RHOVS = rhoVS(n, Cs, MF, MGT, MIMASSC2, MFMASSC2, Z, R, betaType, mode) ;
+        double RHOH = rho_H(n, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, mode) ;
+        double DELTA_RHOH = delta_rho_H(n, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, mode) ;
+        double RHO0 = rho0(n, MF, MGT, MIMASSC2, MFMASSC2, Z, R, mode);
+        double RHOVS = rhoVS(n, Cs, MF, MGT, MIMASSC2, MFMASSC2, Z, R, mode) ;
         double RHO0VS = RHO0 + RHOVS ;
         Info("Observables : ", 1);
         Info(Form("Δ = %.5f keV", delta(MIMASSC2, MFMASSC2, mode)*CRADLE::utilities::EMASSC2), 2);
         Info(Form("rH : %.5f  ±  %.5f", 100*RHOH/(RHO0VS + RHOH), 100*RHO0VS/pow(RHO0VS+RHOH, 2)*DELTA_RHOH), 2);
         Info(Form("rρ : %.5f", 100*(RHOVS+RHOH)/RHO0), 2);
-        double mean = W0VS_mean(1e3, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, betaType, mode);
-        double max = W0VS_max(1e3, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, betaType, mode);
+        double mean = W0VS_mean(1e3, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, mode);
+        double max = W0VS_max(1e3, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, mode);
         Info(Form("E0VS: %.5f", 100. * mean / max), 2);
-        Info(Form("EH : %.5f", 100*WH_mean(1e5, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, betaType, mode) / WH_max(1e5, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, betaType, mode)), 2);
+        Info(Form("EH : %.5f", 100*WH_mean(1e5, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, mode) / WH_max(1e5, Cs, MF, MGT, a, MIMASSC2, MFMASSC2, Z, R, mode)), 2);
         //
     }
 

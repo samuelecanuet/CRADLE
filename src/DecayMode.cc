@@ -199,11 +199,12 @@ std::vector<Particle*> BetaRadiative::Decay(Particle* initState, double Q, doubl
   }
   catch(const std::exception& e)
   {
-    Type = utilities::FindMatrixElement(initState, Recoil, mf, mgt);
+    double mixing_ratio;
+    Type = utilities::FindMatrixElement(initState, Recoil, mf, mgt, mixing_ratio);
     double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, E0/3.+utilities::EMASSC2, Recoil->GetCharge(), -BetaSign);
-    PH = radiativecorrections::PH(dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, Type, BetaSign);
-    W_max_H = radiativecorrections::WH_max(1e6, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, Type, BetaSign);
-    W_max_VS = radiativecorrections::W0VS_max(1e6, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, Type, BetaSign);
+    PH = radiativecorrections::PH(dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
+    W_max_H = radiativecorrections::WH_max(1e6, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
+    W_max_VS = radiativecorrections::W0VS_max(1e6, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
     dm.RegisterChannelPropreties(ChannelName, nullptr, 0., Type, 0., 0., 0., W_max_H, W_max_VS, PH);
     dm.SetChannelMf(ChannelName, mf);
     dm.SetChannelMgt(ChannelName, mgt);
@@ -285,7 +286,7 @@ std::vector<Particle*> BetaRadiative::Decay(Particle* initState, double Q, doubl
       double N1_K = n_NEUTRINO[0] * n_GAMMA[0] + n_NEUTRINO[1] * n_GAMMA[1] + n_NEUTRINO[2] * n_GAMMA[2];
 
       double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, E2, Recoil->GetCharge(), -BetaSign);
-      W_point_H = radiativecorrections::WH(E2, K, COS_GAMMA, N1_K, N1_N2, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, Type, BetaSign);
+      W_point_H = radiativecorrections::WH(E2, K, COS_GAMMA, N1_K, N1_N2, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
     }
 
     ublas::vector<double> velocity = -initState->GetVelocity();
@@ -346,7 +347,7 @@ std::vector<Particle*> BetaRadiative::Decay(Particle* initState, double Q, doubl
       COS_NEUTRINO = 2. * U[1] - 1.;
 
       double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, E2, Recoil->GetCharge(), -BetaSign);
-      W_point_VS = radiativecorrections::W0VS(E2, COS_NEUTRINO, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, Type, BetaSign);
+      W_point_VS = radiativecorrections::W0VS(E2, COS_NEUTRINO, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
     }
 
     double E10 = radiativecorrections::delta(InitialMass, RecoilMass, BetaSign) - E2;
@@ -449,8 +450,9 @@ std::vector<Particle*> Beta::Decay(Particle* initState, double Q, double daughte
   }
   catch (const std::invalid_argument &e)
   {
-    Type = utilities::FindMatrixElement(initState, Recoil, mf, mgt);
-    dist = spectrumGen->GenerateSpectrum(initState, Recoil, E0, Type);
+    double mixing_ratio;
+    Type = utilities::FindMatrixElement(initState, Recoil, mf, mgt, mixing_ratio);
+    dist = spectrumGen->GenerateSpectrum(initState, Recoil, E0, Type, mf, mgt, mixing_ratio);
     double b = correlation::CalculateFierz(mf, mgt, initState->GetCharge(), -BetaSign);
     for (int i = 0; i < dist->size(); i++)
     {

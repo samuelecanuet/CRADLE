@@ -7,7 +7,7 @@
 
 namespace CRADLE {
 
-std::vector<std::vector<double> >* DeltaSpectrumGenerator::GenerateSpectrum(Particle* initState, Particle* finalState, double Q, int DecayType) {
+std::vector<std::vector<double> >* DeltaSpectrumGenerator::GenerateSpectrum(Particle* initState, Particle* finalState, double Q, int DecayType, double mf, double mgt, double mixing_ratio) {
   std::vector<std::vector<double> >* deltaDist = new std::vector<std::vector<double> >();
   std::vector<double> pair = {Q, 1.0};
   deltaDist->push_back(pair);
@@ -15,18 +15,18 @@ std::vector<std::vector<double> >* DeltaSpectrumGenerator::GenerateSpectrum(Part
   return deltaDist;
 }
 
-std::vector<std::vector<double> >* SimpleBetaDecay::GenerateSpectrum(Particle* initState, Particle* finalState, double Q, int DecayType) {
+std::vector<std::vector<double> >* SimpleBetaDecay::GenerateSpectrum(Particle* initState, Particle* finalState, double Q, int DecayType, double mf, double mgt, double mixing_ratio) {
   std::vector<std::vector<double> >* spectrum = utilities::GenerateBetaSpectrum(
   (finalState->GetCharge() - initState->GetCharge())*finalState->GetCharge(),
-  finalState->GetCharge()+finalState->GetNeutrons(), Q, false, DecayType);
+  finalState->GetCharge()+finalState->GetNeutrons(), Q, false, DecayType, mf, mgt, mixing_ratio);
 
   return spectrum;
 }
 
-std::vector<std::vector<double> >* AdvancedBetaDecay::GenerateSpectrum(Particle* initState, Particle* finalState, double Q, int DecayType) {
+std::vector<std::vector<double> >* AdvancedBetaDecay::GenerateSpectrum(Particle* initState, Particle* finalState, double Q, int DecayType, double mf, double mgt, double mixing_ratio) {
   std::vector<std::vector<double> >* spectrum = utilities::GenerateBetaSpectrum(
   (finalState->GetCharge() - initState->GetCharge())*finalState->GetCharge(),
-  finalState->GetCharge()+finalState->GetNeutrons(), Q, true, DecayType);
+  finalState->GetCharge()+finalState->GetNeutrons(), Q, true, DecayType, mf, mgt, mixing_ratio);
 
   return spectrum;
 }

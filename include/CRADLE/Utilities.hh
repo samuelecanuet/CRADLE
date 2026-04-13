@@ -218,7 +218,7 @@ namespace CRADLE
       return 0.;
     }
 
-    inline int FindMatrixElement(int initZ, int initA, double initExcEn, int finalZ, int finalA, double finalExcEn, double &mf, double &mgt)
+    inline int FindMatrixElement(int initZ, int initA, double initExcEn, int finalZ, int finalA, double finalExcEn, double &mf, double &mgt, double &rho)
     {
       DecayManager &dm = DecayManager::GetInstance();
       double Ji = utilities::GetJpi(initA, initZ, initExcEn);
@@ -256,9 +256,9 @@ namespace CRADLE
       }
     }
     
-    inline int FindMatrixElement(Particle *initState, Particle *finalState, double &mf, double &mgt)
+    inline int FindMatrixElement(Particle *initState, Particle *finalState, double &mf, double &mgt, double &mixing_ratio)
     {
-      return FindMatrixElement(initState->GetCharge(), initState->GetCharge() + initState->GetNeutrons(), initState->GetExcitationEnergy(), finalState->GetCharge(), finalState->GetCharge() + finalState->GetNeutrons(), finalState->GetExcitationEnergy(), mf, mgt);
+      return FindMatrixElement(initState->GetCharge(), initState->GetCharge() + initState->GetNeutrons(), initState->GetExcitationEnergy(), finalState->GetCharge(), finalState->GetCharge() + finalState->GetNeutrons(), finalState->GetExcitationEnergy(), mf, mgt, mixing_ratio);
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -280,6 +280,7 @@ namespace CRADLE
     }
 
     inline double Random(double begin, double end) { return rand() / (double)RAND_MAX * (end - begin) + begin; }
+
 
     inline double CalculateMax(std::vector<std::vector<double>> &pd)
     {
@@ -465,7 +466,7 @@ namespace CRADLE
     inline std::tuple<double, double> CCorrectionComponents( ////////Shape Factor ----- C (OK)
         double W, double W0, int Z, int A, double R, int betaType, int decayType,
         double gA, double gP, double fc1, double fb, double fd,
-        double ratioM121)
+        double ratioM121, double mixingRatio)
     {
       double AC0, AC1, ACm1, AC2;
       double VC0, VC1, VCm1, VC2;
@@ -476,6 +477,8 @@ namespace CRADLE
       double F1222 = 233. / 210.;
       double F1211 = -3. / 70.;
 
+      double Lambda = std::sqrt(2.) / 3. * 10. * ratioM121;
+
       VC0 = -std::pow(W0 * R, 2.) / 5. -
             betaType * 2. / 9. * FINESTRUCTURE * Z * W0 * R * F1111 -
             std::pow(FINESTRUCTURE * Z, 2.) / 3. * F1222;
@@ -483,20 +486,28 @@ namespace CRADLE
       VC1 = 4. / 15. * W0 * R * R -
             betaType * 2. / 3. * FINESTRUCTURE * Z * R * (F1221 - F1111 / 3.);
 
-      VCm1 = 2. / 15. * W0 * R * R - betaType * FINESTRUCTURE * Z * R / 3. * F1211;
+      // VCm1 = 2. / 15. * W0 * R * R - betaType * FINESTRUCTURE * Z * R / 3. * F1211;
+      VCm1 = 2. / 15. * W0 * R * R + betaType * FINESTRUCTURE * Z * R / 3. * F1211; //sign
 
       VC2 = -4. / 15. * R * R;
 
+
+      // ADDING LAMBDA 
+      // AC0 = -1. / 3. * std::pow(FINESTRUCTURE * Z, 2.) * F1222 -
+      //       1. / 5. * (W0 * W0 - 1.) * R * R +
+      //       betaType * 2. / 27. * FINESTRUCTURE * Z * W0 * R * F1111 + 11. / 45. * R * R; // No -1
       AC0 = -1. / 3. * std::pow(FINESTRUCTURE * Z, 2.) * F1222 -
-            1. / 5. * (W0 * W0 - 1.) * R * R +
-            betaType * 2. / 27. * FINESTRUCTURE * Z * W0 * R * F1111 + 11. / 45. * R * R;
+            1. / 5. * (W0 * W0) * R * R +
+            betaType * 2. / 27. * FINESTRUCTURE * Z * W0 * R*(1 - Lambda) * F1111 + 4. / 9. * R * R*(1 - 1./20. * Lambda);
+        // 1/c1 term avoided
 
       AC1 = 4. / 9. * W0 * R * R -
             betaType * 2. / 3. * FINESTRUCTURE * Z * R * (1. / 9. * F1111 + F1221);
 
-      ACm1 = -2. / 45. * W0 * R * R + betaType * FINESTRUCTURE * Z * R / 3. * F1211;
+      ACm1 = -2. / 45. * W0 * R * R * (1 - Lambda) + betaType * FINESTRUCTURE * Z * R / 3. * F1211;
 
-      AC2 = -4. / 9. * R * R;
+      AC2 = -4. / 9. * R * R * (1 - 1./10. * Lambda); ;
+      // 
 
       double cShape = 0.;
 
@@ -508,14 +519,16 @@ namespace CRADLE
       {
         cShape = 1. + AC0 + AC1 * W + ACm1 / W + AC2 * W * W;
       }
+      else if (decayType == MIXED)
+      {
+        cShape = 1. + 1 / (1 + std::pow(mixingRatio, 2.)) * (VC0 + VC1 * W + VCm1 / W + VC2 * W * W) + std::pow(mixingRatio, 2.) / (1 + std::pow(mixingRatio, 2.)) * (AC0 + AC1 * W + ACm1 / W + AC2 * W * W);
+      }
 
       double cNS = 0;
 
-      if (decayType == GAMOW_TELLER)
+      if (decayType == GAMOW_TELLER || decayType == MIXED)
       {
         double M = A * NMASSC2 / EMASSC2;
-
-        double Lambda = std::sqrt(2.) / 3. * 10. * ratioM121;
 
         double phi = gP / gA / std::pow(2. * M * R / A, 2);
 
@@ -545,30 +558,23 @@ namespace CRADLE
         cNS += phi * (P0 + P1 * W + Pm1 / W);
       }
 
+      if (decayType == MIXED)
+      {
+        cNS = std::pow(mixingRatio, 2.) / (1 + std::pow(mixingRatio, 2.)) * cNS;
+      }
+
       return std::make_tuple(cShape, cNS);
     }
 
     inline double QCorrection(double W, double W0, int Z, int A, ////////// Q Correction ---- Q (changement de la récupération de la valeur de a)
-                              int betaType, int decayType)
+                              int betaType, double mf, double mgt)
     {
-
-      double mf = 0.;
-      double mgt = 0.;
-      if (decayType == FERMI)
-      {
-        mf = 1.;
-      }
-      else
-      {
-        mgt = 1.;
-      }
-
-      double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, W, Z, decayType);
+      double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, W*EMASSC2, Z, betaType);
 
       double M = A * (PMASSC2 + NMASSC2) / 2. / EMASSC2;
 
       double p = std::sqrt(W * W - 1.);
-
+        
       return 1. - betaType * M_PI * FINESTRUCTURE * Z / M / p * (1. + a * (W0 - W) / 3. / M);
     }
 
@@ -581,13 +587,9 @@ namespace CRADLE
       // 1st order, based on the 5th Wilkinson article
       double beta = std::sqrt(1.0 - 1.0 / W / W);
 
-      double g = 3. * std::log(PMASSC2 / EMASSC2) - 0.75 +
-                 4. * (std::atanh(beta) / beta - 1.) *
-                     ((W0 - W) / 3. / W - 1.5 + std::log(2 * (W0 - W)));
-      g += 4.0 / beta * Spence(2. * beta / (1. + beta)) +
-           std::atanh(beta) / beta *
-               (2. * (1. + beta * beta) + (W0 - W) * (W0 - W) / 6. / W / W -
-                4. * std::atanh(beta));
+      double g = 3. * std::log(PMASSC2 / EMASSC2) - 0.75 +4.0 / beta * Spence(2. * beta / (1. + beta)) +
+                 4. * (std::atanh(beta) / beta - 1.) * ((W0 - W) / 3. / W - 1.5 + std::log(2 * (W0 - W)))
+                  + std::atanh(beta) / beta * (2. * (1. + beta * beta) + (W0 - W) * (W0 - W) / 6. / W / W - 4. * std::atanh(beta));
 
       double O1corr =
           FINESTRUCTURE / 2. / M_PI *
@@ -634,7 +636,7 @@ namespace CRADLE
     }
 
     inline double NeutrinoRadiativeCorrection(double Wv)
-    { ////// vNeutrino Radiative Correction ------ Rnu (OK (attention à Wv) mais pas utilisé)
+    { ////// vNeutrino Radiative Correction ------ Rnu (not used (neutrino spectrum useless for now))
       double h = 0.;
       double pv = std::sqrt(Wv * Wv - 1);
       double beta = pv / Wv;
@@ -673,7 +675,7 @@ namespace CRADLE
       {
         return 1 + Ar0 + Ar1 / W + Ar2 * W + Ar3 * W * W;
       }
-      else if (mixingRatio > 0)
+      else if (mixingRatio != 0)
       {
         return 1 +
                1. / (1 + std::pow(mixingRatio, 2)) *
@@ -779,7 +781,7 @@ namespace CRADLE
       return (1.15 + 1.8 * std::pow(A, -2. / 3.) - 1.2 * std::pow(A, -4. / 3.)) * std::pow(A, 1. / 3.) * 1.E-15;
     }
 
-    inline double GetSpectrumHeight(int Z, int A, double Q, double E, bool advanced, int decayType)
+    inline double GetSpectrumHeight(int Z, int A, double Q, double E, bool advanced, int decayType, double mf, double mgt, double mixing_ratio)
     {
       double W = E / EMASSC2 + 1.;
       double W0 = Q / EMASSC2 + 1.;
@@ -790,13 +792,11 @@ namespace CRADLE
         Z = std::abs(Z);
         double cShape, cNS;
         DecayManager &dm = DecayManager::GetInstance();
-        std::tie(cShape, cNS) = CCorrectionComponents(W, W0, Z, A, R, betaSign, decayType, 1.27, -229, 1, 4. * A, 1 * A, 0);
+        std::tie(cShape, cNS) = CCorrectionComponents(W, W0, Z, A, R, betaSign, decayType, -LAMBDA, -229, 1, 4. * A, 1. * A, 0, 0);
         double CCorr = cShape + cNS;
-        // My correction SL 10/05/2023
-        return PhaseSpace(W, W0) * FermiFunction(Z, W, R, betaSign) * AtomicExchangeCorrection(W, Z) * L0Correction(W, Z, R, betaSign) * CCorr * UCorrection(W, Z, betaSign) * AtomicScreeningCorrection(W, Z, betaSign) * RadiativeCorrection(W, W0, Z, R, 1.27, 4.706) * RecoilCorrection(W, W0, A, decayType, 0) * AtomicMismatchCorrection(W, W0, Z, A, betaSign) * QCorrection(W, W0, Z, A, betaSign, decayType);
-
-        // Raw implementation
-        // return PhaseSpace(W, W0)*FermiFunction(Z, W, R, betaSign)*L0Correction(W, Z, R, betaSign)*CCorr*UCorrection(W, Z, betaSign)*AtomicScreeningCorrection(W, Z, betaSign)*RadiativeCorrection(W, W0, Z, R, 1.27, 4.7);
+        // USED 
+        // F x L0 x C x U x S x R x N x r x Q
+        return PhaseSpace(W, W0) * FermiFunction(Z, W, R, betaSign) * AtomicExchangeCorrection(W, Z) * L0Correction(W, Z, R, betaSign) * CCorr * UCorrection(W, Z, betaSign) * AtomicScreeningCorrection(W, Z, betaSign) * RadiativeCorrection(W, W0, Z, R, 1.27, 4.706) * RecoilCorrection(W, W0, A, decayType, mixing_ratio) * AtomicMismatchCorrection(W, W0, Z, A, betaSign) * QCorrection(W, W0, Z, A, betaSign, mf, mgt);
 
         // No Correction
         // return PhaseSpace(W, W0)*FermiFunction(Z, W, R, betaSign);
@@ -807,7 +807,7 @@ namespace CRADLE
       }
     }
 
-    inline std::vector<std::vector<double>> *GenerateBetaSpectrum(int Z, int A, double Q, bool advancedFermi, int decayType)
+    inline std::vector<std::vector<double>> *GenerateBetaSpectrum(int Z, int A, double Q, bool advancedFermi, int decayType, double mf, double gt, double mixing_ratio)
     {
       std::vector<std::vector<double>> *dist = new std::vector<std::vector<double>>();
       double stepSize = 1.0;
@@ -815,7 +815,7 @@ namespace CRADLE
       double currentEnergy = stepSize;
       while (currentEnergy <= Q)
       {
-        double s = GetSpectrumHeight(Z, A, Q, currentEnergy, advancedFermi, decayType);
+        double s = GetSpectrumHeight(Z, A, Q, currentEnergy, advancedFermi, decayType, mf, gt, mixing_ratio);
         std::vector<double> pair;
         pair.push_back(currentEnergy);
         pair.push_back(s);

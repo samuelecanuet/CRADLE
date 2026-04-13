@@ -1,5 +1,5 @@
 [General]
-Verbosity=2
+Verbosity=1
 Verbosity_file=1
 [Nucleus]
 Alignment=0.
@@ -33,6 +33,6 @@ FermiFunction=Advanced
 RadiativeCorrections=false
 Cs=0.001
 [Decay]
-InFlightDecay=false
-NuclearLevelWidth=true
+InFlightDecay=true
+NuclearLevelWidth=false
 GammaGammaCorrelation=true

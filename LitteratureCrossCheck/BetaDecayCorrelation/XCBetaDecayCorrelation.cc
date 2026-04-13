@@ -425,8 +425,8 @@ int main(int argc, const char **argv)
         dm.Initialise(configfilename, argc, argv);   
         //
 
-        double mf, mgt;
-        utilities::FindMatrixElement(scenario.second.Z, scenario.second.A, 0, scenario.second.Z - scenario.second.BetaSign, scenario.second.A, 0, mf, mgt);
+        double mf, mgt, mixing_ratio;
+        utilities::FindMatrixElement(scenario.second.Z, scenario.second.A, 0, scenario.second.Z - scenario.second.BetaSign, scenario.second.A, 0, mf, mgt, mixing_ratio);
         Info(Form("Matrix elements: M_F = %.4f, M_GT = %.4f", mf, mgt), 2);
         double Ji = scenario.second.Ji;
         double Jf = scenario.second.Jf;
