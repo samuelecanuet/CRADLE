@@ -25,6 +25,8 @@ int main (int argc, const char* argv[]) {
   CRADLE::DecayManager& dm = CRADLE::DecayManager::GetInstance();
   bool success = dm.Initialise(configFilename, argc, argv);
 
+  
+
   if (success) {
     dm.MainLoop();
   } else {

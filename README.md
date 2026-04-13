@@ -8,7 +8,7 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-* [BOOST](https://www.boost.org/) - Linear algebra rotuines, and the `program_options` part of the library
+* [BOOST](https://www.boost.org/) - Linear algebra routines, and the `program_options` part of the library
 * [GSL](https://www.gnu.org/software/gsl/) - Used for the calculation of the calculation of the complex Gamma function in the Fermi function
 * [Geant4 Data](http://geant4.web.cern.ch/support/download) - G4PhotonEvaporation and G4RadioactiveDecay files are used internally
 * [ROOT](https://root.cern/install/) - Used to generate ROOT file 
@@ -40,7 +40,7 @@ This file is an input of CRADLE to setting the generator. You can configure verb
 * *C<sub>i*: set all the coupling constant of the Lee Yang Lagragian.
 * *a*, *b*, *A*, *B*, *D*, *c*: if not NaN overwritting the calculated parameters with*C<sub>i*
 * Cuts: distance, time and energy limit of calculation
-* Beta Decay: *Fermi* or *Gamow-Teller* to impose $\beta$ decay type. *Auto* take into account real $\beta$ decay type extracted from Geant4 *GammaData*, only available for pure transition (set on Gamow-Teller if mixed transition)
+* Beta Decay: *Fermi* or *Gamow-Teller* to impose $\beta$ decay type. *Auto* take into account real $\beta$ decay type deduced from $J^{\pi}$ state included in Geant4 *GammaData*, only available for pure transition (set on Gamow-Teller if Mixed transition)
 * FermiFunction: Simple or Advanced
 * Alignement: setting its value
 * Polarisation: setting its value and direction
@@ -49,12 +49,46 @@ This file is an input of CRADLE to setting the generator. You can configure verb
 * GammaGammaCorrelation: *true*/*false* (if *true* the angular correlation between 2 following $\gamma$ in a cascade is calculated)
 
 ### Run 
-Running command example for 32Ar : 
+Running command example for $^{32}\mathrm{Ar}$ : 
 ```bash
 ./CRADLE++ nucleus --name 32Ar -Z 18 -A 32 general -l [NumberOfEvents] -o [OuputFileName] -c [ConfigFileName] -t [NumberOfThread]
 ```
 Note that you can generate .txt file or .root file (TTree)
+
+### OUTPUT
+## ROOT
 In the case of a ROOT file, input files as the Radioactive/Evaporation data and the config file will be saved using a TObjString.
+## TXT
+Exemple (Verbosity_file = 2)
+```
+0		6
+0       0		1
+0		0.0000	32Ar	0	0	2.98056e+07	0	0	0
+0       1		3
+0		0.0138	enu	0	1637.93	1637.93	849.525	-966.08	1013.81
+0		0.0138	e+	0	4449.64	4960.63	938.992	3849.79	2940.11
+0		0.0138	32Cl	5046.3	0.455511	2.97995e+07	-1788.52	-2883.71	-3953.91
+0       2		2
+0		0.0138	p	0	3358.21	941630	-14713.3	-68411.4	37636.6
+0		0.0138	31S	0	107.264	2.88574e+07	12924.8	65527.7	-41590.5
+1		6
+1       0		1
+1		0.0000	32Ar	0	0	2.98056e+07	0	0	0
+1       1		3
+1		0.0138	enu	0	1668.53	1668.53	251.982	987.288	-1321.27
+1		0.0138	e+	0	4419.23	4930.23	531.898	533.121	4845.51
+1		0.0138	32Cl	5046.3	0.257493	2.97995e+07	-783.881	-1520.41	-3524.24
+1       2		2
+1		0.0138	p	0	3357.21	941629	-42398	60299.5	-29624.5
+1		0.0138	31S	0	108.026	2.88574e+07	41614.1	-61819.9	26100.3
+```
+Exemple (Verbosity_file = 1) 
+```
+0		0.0138	e+	0	4449.64	4960.63	938.992	3849.79	2940.11
+0		0.0138	p	0	3358.21	941630	-14713.3	-68411.4	37636.6
+1		0.0138	e+	0	4419.23	4930.23	531.898	533.121	4845.51
+1		0.0138	p	0	3357.21	941629	-42398	60299.5	-29624.5
+```
 
 ## Details
 See *Generator_Documentation.pdf* for more details about the generator.
@@ -83,14 +117,16 @@ In the folder Reader, one python and one C++ (ROOT macro based) script can read 
 - Writting input decay data in the final ROOT file
 - Using Von Neumann rejection when possible
 - Oriented nuclei linked $\beta$ decay correlations 
-- Include $\gamma$-$\gamma$ angular correlation (HAL Id: hal-04964841)
+- Include $\gamma-\gamma$ angular correlation (HAL Id: hal-04964841)
+### v2.5
+- Fixing errors
+- Adding 4-body decay for radiative correction (F.Glück 1998 https://doi.org/10.1016/S0010-4655(96)00168-3)
+- Adding a unit test folder to crosscheck with Litt.
+- Include $\beta$-decay mixing ratio
 
 ### TODO 
-- Four body decay for radiative correction
-- Include matrix nuclear data for mixed decay
 - Using NUDAT data
 - Include R-Matrix 
-- Include $\beta$-decay mixing ratio
 - Inlcude $\gamma$ angular distribution (relevant for polarised nuclei)
 - Decay scheme generator
 

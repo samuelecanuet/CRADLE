@@ -52,14 +52,22 @@ namespace CRADLE
   void SetCouplingConstants(CLI::App &app, CouplingConstants &couplingConstants)
   {
     CLI::App *cmd = app.add_subcommand("Coupling", "This is the coupling subcommand");
-    cmd->add_option("--CV", couplingConstants.CV, "Vector coupling constant.");
-    cmd->add_option("--CT", couplingConstants.CT, "Tensor coupling constant.");
-    cmd->add_option("--CS", couplingConstants.CS, "Scalar coupling constant.");
-    cmd->add_option("--CA", couplingConstants.CA, "Axial coupling constant.");
-    cmd->add_option("--CVP", couplingConstants.CVP, "Vector prime coupling constant.");
-    cmd->add_option("--CTP", couplingConstants.CTP, "Tensor prime coupling constant.");
-    cmd->add_option("--CSP", couplingConstants.CSP, "Scalar prime coupling constant.");
-    cmd->add_option("--CAP", couplingConstants.CAP, "Axial prime coupling constant.");
+    cmd->add_option("--CV", couplingConstants.CV, "(Re) Vector coupling constant.");
+    cmd->add_option("--CT", couplingConstants.CT, "(Re) Tensor coupling constant.");
+    cmd->add_option("--CS", couplingConstants.CS, "(Re) Scalar coupling constant.");
+    cmd->add_option("--CA", couplingConstants.CA, "(Re) Axial coupling constant.");
+    cmd->add_option("--CVP", couplingConstants.CVP, "(Re) Vector prime coupling constant.");
+    cmd->add_option("--CTP", couplingConstants.CTP, "(Re) Tensor prime coupling constant.");
+    cmd->add_option("--CSP", couplingConstants.CSP, "(Re) Scalar prime coupling constant.");
+    cmd->add_option("--CAP", couplingConstants.CAP, "(Re) Axial prime coupling constant.");
+    cmd->add_option("--iCV", couplingConstants.iCV, "(Im) Vector coupling constant.");
+    cmd->add_option("--iCT", couplingConstants.iCT, "(Im) Tensor coupling constant.");
+    cmd->add_option("--iCS", couplingConstants.iCS, "(Im) Scalar coupling constant.");
+    cmd->add_option("--iCA", couplingConstants.iCA, "(Im) Axial coupling constant.");
+    cmd->add_option("--iCVP", couplingConstants.iCVP, "(Im) Vector prime coupling constant.");
+    cmd->add_option("--iCTP", couplingConstants.iCTP, "(Im) Tensor prime coupling constant.");
+    cmd->add_option("--iCSP", couplingConstants.iCSP, "(Im) Scalar prime coupling constant.");
+    cmd->add_option("--iCAP", couplingConstants.iCAP, "(Im) Axial prime coupling constant.");
     cmd->add_option("--a", couplingConstants.a, "Angular correlation coefficient.");
     cmd->add_option("--b", couplingConstants.b, "Fierz term.");
     cmd->add_option("--A", couplingConstants.A, "Beta asymmetry.");
@@ -81,12 +89,14 @@ namespace CRADLE
     CLI::App *cmd = app.add_subcommand("BetaDecay", "This is the beta decay subcommand")->ignore_case();
     cmd->add_option("--Default", betaDecay.Default, "");
     cmd->add_option("--FermiFunction", betaDecay.FermiFunction, "");
+    cmd->add_option("--RadiativeCorrections", betaDecay.RadiativeCorrections, "")->ignore_case();
+    cmd->add_option("--Cs", betaDecay.Cs, "")->ignore_case();
   }
 
   void SetDecayOptions(CLI::App &app, Decay &decay)
   {
     CLI::App *cmd = app.add_subcommand("Decay", "This is the decay subcommand")->ignore_case();
-    cmd->add_option("--Nuclear_Level_Width", decay.Nuclear_Level_Width, "")->ignore_case();
+    cmd->add_option("--NuclearLevelWidth", decay.NuclearLevelWidth, "")->ignore_case();
     cmd->add_option("--InFlightDecay", decay.InFlightDecay, "")->ignore_case();
     cmd->add_option("--GammaGammaCorrelation", decay.GammaGammaCorrelation, "")->ignore_case();
   }
@@ -96,6 +106,7 @@ namespace CRADLE
     app.add_option("--AMEdata", envOptions.AMEdata, "AME2020 file location")->envname("AMEdata");
     app.add_option("--Gammadata", envOptions.Gammadata, "")->envname("Gammadata");
     app.add_option("--Radiationdata", envOptions.Radiationdata, "")->envname("Radiationdata");
+    app.add_option("--BetaMixingRatios", envOptions.BetaMixingRatios, "Beta mixing ratios file location")->envname("BetaMixingRatios");
   }
 
   ConfigOptions ParseOptions(std::string filename, int argc, const char **argv)
@@ -117,7 +128,18 @@ namespace CRADLE
 
     parse(app, argc, argv);
 
-    PrintingAllOptions(configOptions);
+    // setup complex output file Cx from iCx
+    configOptions.couplingConstants.CS = std::complex<double>(configOptions.couplingConstants.CS.real(), configOptions.couplingConstants.iCS);
+    configOptions.couplingConstants.CV = std::complex<double>(configOptions.couplingConstants.CV.real(), configOptions.couplingConstants.iCV);
+    configOptions.couplingConstants.CT = std::complex<double>(configOptions.couplingConstants.CT.real(), configOptions.couplingConstants.iCT);
+    configOptions.couplingConstants.CA = std::complex<double>(configOptions.couplingConstants.CA.real(), configOptions.couplingConstants.iCA);
+    configOptions.couplingConstants.CSP = std::complex<double>(configOptions.couplingConstants.CSP.real(), configOptions.couplingConstants.iCSP);
+    configOptions.couplingConstants.CVP = std::complex<double>(configOptions.couplingConstants.CVP.real(), configOptions.couplingConstants.iCVP);
+    configOptions.couplingConstants.CTP = std::complex<double>(configOptions.couplingConstants.CTP.real(), configOptions.couplingConstants.iCTP); 
+    configOptions.couplingConstants.CAP = std::complex<double>(configOptions.couplingConstants.CAP.real(), configOptions.couplingConstants.iCAP);
+
+    if (configOptions.general.Verbosity > 0)
+      PrintingAllOptions(configOptions);
 
     std::cout << std::endl;
 
@@ -170,10 +192,12 @@ namespace CRADLE
     Message("BetaDecay", "", 0, "CYAN");
     Message("BetaDecay", "Default: " + configOptions.betaDecay.Default, 1, "blue");
     Message("BetaDecay", "FermiFunction: " + configOptions.betaDecay.FermiFunction, 1, "blue");
+    Message("BetaDecay", Form("RadiativeCorrections: %s", configOptions.betaDecay.RadiativeCorrections ? "true" : "false"), 1, "blue");
+    Message("BetaDecay", Form("Cs: %.5f", configOptions.betaDecay.Cs), 1, "blue");
 
     Message("Decay", "", 0, "CYAN");
     Message("Decay", Form("InFlightDecay: %s", configOptions.decay.InFlightDecay ? "true" : "false"), 1, "blue");
-    Message("Decay", Form("Nuclear_Level_Width: %s", configOptions.decay.Nuclear_Level_Width ? "true" : "false"), 1, "blue");
+    Message("Decay", Form("NuclearLevelWidth: %s", configOptions.decay.NuclearLevelWidth ? "true" : "false"), 1, "blue");
     Message("Decay", Form("γγ Correlation: %s", configOptions.decay.GammaGammaCorrelation ? "true" : "false"), 1, "blue");
   }
 } // end of namespace CRADLE

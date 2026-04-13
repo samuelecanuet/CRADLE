@@ -22,9 +22,10 @@ class DecayMode {
     void SetSpectrumGenerator(SpectrumGenerator*);
 
   protected:
+    static void FourBodyDecay(ublas::vector<double>&, Particle*, Particle*, Particle*, Particle*);
     static void ThreeBodyDecay(ublas::vector<double>&, Particle*, Particle*, Particle*, ublas::vector<double>&, double);
     static void TwoBodyDecay(ublas::vector<double>&, Particle*, Particle*, double);
-    static void TwoBodyDecay(ublas::vector<double>&, Particle*, Particle*, double, ublas::vector<double>& dir);
+    static void TwoBodyDecay(ublas::vector<double>&, Particle*, Particle*, double, ublas::vector<double> dir);
     SpectrumGenerator* spectrumGen;
 };
 
@@ -40,6 +41,20 @@ class Beta: public DecayMode {
     Beta();
     Beta(Beta const& copy);
     Beta& operator=(Beta const& copy);
+};
+
+class BetaRadiative: public DecayMode {
+  public:
+    static BetaRadiative& GetInstance() {
+      static BetaRadiative instance;
+      return instance;
+    }
+    std::vector<Particle*> Decay(Particle*, double, double);
+
+  protected:
+    BetaRadiative();
+    BetaRadiative(BetaRadiative const& copy);
+    BetaRadiative& operator=(BetaRadiative const& copy);
 };
 
 class ConversionElectron: public DecayMode {

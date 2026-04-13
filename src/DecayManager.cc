@@ -6,6 +6,7 @@
 #include "CRADLE/SpectrumGenerator.hh"
 #include "CRADLE/ThreadPool.hh"
 #include "CRADLE/ECShell.hh"
+#include "CRADLE/RadiativeCorrections.hh"
 
 // #include <boost/progress.hpp>
 #include <fstream>
@@ -98,7 +99,7 @@ namespace CRADLE
     return p;
   }
 
-  void DecayManager::RegisterChannelPropreties(const string name, vector<vector<double>> *dist, double Max, int betaType, double j_i, double j_f)
+  void DecayManager::RegisterChannelPropreties(const string name, vector<vector<double>> *dist, double Max, int betaType, double j_i, double j_f, double j_m, double W_max_H, double W_max_VS, double PH)
   {
     ChannelProperties cp;
     cp.distribution = dist;
@@ -106,6 +107,14 @@ namespace CRADLE
     cp.betaType = betaType;
     cp.j_i = j_i;
     cp.j_f = j_f;
+
+    // only for gamma cascade
+    cp.j_m = j_m;
+    
+    // only for radiative beta decay
+    cp.W_max_H = W_max_H;
+    cp.W_max_S = W_max_VS;
+    cp.PH = PH;
 
     registeredChannelProperties.insert(pair<string, ChannelProperties>(name, cp));
     if (configOptions.general.Verbosity >= 2)
@@ -148,6 +157,15 @@ namespace CRADLE
     return registeredChannelProperties.at(name).j_f;
   }
 
+  double DecayManager::GetChannelJm(const string name)
+  {
+    if (registeredChannelProperties.count(name) == 0)
+    {
+      throw std::invalid_argument("Channel properties not registered.");
+    }
+    return registeredChannelProperties.at(name).j_m;
+  }
+
   vector<vector<double>> *DecayManager::GetChannelDistribution(const string name)
   {
     if (registeredChannelProperties.count(name) == 0)
@@ -166,6 +184,60 @@ namespace CRADLE
     return registeredChannelProperties.at(name).MAX_distribution;
   }
 
+  std::pair<double, double> DecayManager::GetChannelDistributionMaxs(const string name)
+  {
+    if (registeredChannelProperties.count(name) == 0)
+    {
+      throw std::invalid_argument("Channel properties not registered.");
+    }
+    return std::make_pair(registeredChannelProperties.at(name).W_max_H, registeredChannelProperties.at(name).W_max_S);
+  }
+
+  double DecayManager::GetChannelPH(const string name)
+  {
+    if (registeredChannelProperties.count(name) == 0)
+    {
+      throw std::invalid_argument("Channel properties not registered.");
+    }
+    return registeredChannelProperties.at(name).PH;
+  }
+
+  void DecayManager::SetChannelMf(const string name, double mf)
+  {
+    if (registeredChannelProperties.count(name) == 0)
+    {
+      throw std::invalid_argument("Channel properties not registered.");
+    }
+    registeredChannelProperties.at(name).mf = mf;
+  }
+
+  void DecayManager::SetChannelMgt(const string name, double mgt)
+  {
+    if (registeredChannelProperties.count(name) == 0)
+    {
+      throw std::invalid_argument("Channel properties not registered.");
+    }
+    registeredChannelProperties.at(name).mgt = mgt;
+  }
+
+  double DecayManager::GetChannelMf(const string name)
+  {
+    if (registeredChannelProperties.count(name) == 0)
+    {
+      throw std::invalid_argument("Channel properties not registered.");
+    }
+    return registeredChannelProperties.at(name).mf;
+  }
+
+  double DecayManager::GetChannelMgt(const string name)
+  {
+    if (registeredChannelProperties.count(name) == 0)
+    {
+      throw std::invalid_argument("Channel properties not registered.");
+    }
+    return registeredChannelProperties.at(name).mgt;
+  }
+
 
   void DecayManager::RegisterBasicParticles()
   {
@@ -182,6 +254,7 @@ namespace CRADLE
   void DecayManager::RegisterBasicDecayModes()
   {
     RegisterDecayMode("Beta", Beta::GetInstance());
+    RegisterDecayMode("Beta_RC", BetaRadiative::GetInstance());
     RegisterDecayMode("ConversionElectron", ConversionElectron::GetInstance());
     RegisterDecayMode("Proton", Proton::GetInstance());
     RegisterDecayMode("Alpha", Alpha::GetInstance());
@@ -214,9 +287,15 @@ namespace CRADLE
     RegisterSpectrumGenerator("EC", DeltaSpectrumGenerator::GetInstance());
     RegisterSpectrumGenerator("ConversionElectron", DeltaSpectrumGenerator::GetInstance());
     if (configOptions.betaDecay.FermiFunction == "Advanced")
+    {
       RegisterSpectrumGenerator("Beta", AdvancedBetaDecay::GetInstance());
+      RegisterSpectrumGenerator("Beta_RC", AdvancedBetaDecay::GetInstance());
+    }
     else
+    {
       RegisterSpectrumGenerator("Beta", SimpleBetaDecay::GetInstance());
+      RegisterSpectrumGenerator("Beta_RC", AdvancedBetaDecay::GetInstance());
+    }
     
   }
 
@@ -396,7 +475,9 @@ namespace CRADLE
         {
           if (mode.find("Plus") != string::npos)
             Q = -Q;
-          dc = new DecayChannel(mode, &GetDecayMode("Beta"), Q, intensity, lifetime, excitationEnergy,
+          string mode = "Beta";
+          if (configOptions.betaDecay.RadiativeCorrections) mode += "_RC";
+          dc = new DecayChannel(mode, &GetDecayMode(mode), Q, intensity, lifetime, excitationEnergy,
                                daughterExcitationEnergy);
         }
         else
@@ -565,6 +646,8 @@ namespace CRADLE
     initExcitationEn = configOptions.nuclear.Energy;
     outputName = configOptions.general.Output;
     NRTHREADS = configOptions.general.Threads;
+
+  
     if (initStateName != "" && configOptions.nuclear.Nucleons > 0)
     {
       struct stat infoRD;

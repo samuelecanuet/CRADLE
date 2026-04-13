@@ -90,7 +90,7 @@ namespace CRADLE
     inline double CalculateFierz(double mf, double mgt, int Z, int betaType)
     {
       CouplingConstants c = (DecayManager::GetInstance()).configOptions.couplingConstants;
-      if (c.b != std::nan(""))
+      if (!std::isnan(c.b))
         return c.b; // set by user
 
       double gamma = std::sqrt(1. - std::pow(FINESTRUCTURE * Z, 2.));
@@ -101,7 +101,7 @@ namespace CRADLE
     inline double CalculateBetaNeutrinoAsymmetry(double mf, double mgt, double energy, int Z, int betaType)
     {
       CouplingConstants c = (DecayManager::GetInstance()).configOptions.couplingConstants;
-      if (c.a != std::nan(""))
+      if (!std::isnan(c.a))
         return c.a; // set by user
 
       double coulombCorr = FINESTRUCTURE * Z / std::sqrt(energy * energy / EMASSC2 / EMASSC2 - 1);
@@ -114,12 +114,12 @@ namespace CRADLE
     inline double CalculateBetaAssymetry(double mf, double mgt, double j_i, double j_f, int betaType, int Z, double energy)
     {
       CouplingConstants c = (DecayManager::GetInstance()).configOptions.couplingConstants;
-      if (c.A != std::nan("")) // set by user
+      if (!std::isnan(c.A)) // set by user
         return c.A;
 
       double coulombCorr = FINESTRUCTURE * Z / std::sqrt(energy * energy / EMASSC2 / EMASSC2 - 1); // alpha*Z*m_e/p_e
-      double gamma_ratio = std::sqrt(1. - std::pow(FINESTRUCTURE * Z, 2.)) * EMASSC2 / energy;     // gamma*m_e/E
-      double A = mgt * mgt * SmallLambdaJiJfFactor(j_i, j_f) * (2. * betaType * (c.CT * conj(c.CTP) - c.CA * conj(c.CAP)).real() + 2. * gamma_ratio * (c.CT * conj(c.CAP) + c.CTP * conj(c.CA)).imag());
+      // double gamma_ratio = std::sqrt(1. - std::pow(FINESTRUCTURE * Z, 2.)) * EMASSC2 / energy;     // gamma*m_e/E
+      double A = mgt * mgt * SmallLambdaJiJfFactor(j_i, j_f) * (2. * betaType * (c.CT * conj(c.CTP) - c.CA * conj(c.CAP)).real() + 2. * coulombCorr * (c.CT * conj(c.CAP) + c.CTP * conj(c.CA)).imag());
       if (j_i == j_f)
       { // Mixed decay factors
         A += mf * mgt * std::sqrt(j_i / (j_i + 1)) * (2. * (c.CS * conj(c.CTP) + c.CSP * conj(c.CT) - c.CV * conj(c.CAP) - c.CVP * conj(c.CA)).real() + 2 * betaType * coulombCorr * (c.CS * conj(c.CAP) + c.CSP * conj(c.CA) - c.CV * conj(c.CTP) - c.CVP * conj(c.CT)).imag());
@@ -132,7 +132,7 @@ namespace CRADLE
     inline double CalculateNeutrinoAssymetry(double mf, double mgt, double j_i, double j_f, int betaType, int Z, double energy)
     {
       CouplingConstants c = (DecayManager::GetInstance()).configOptions.couplingConstants;
-      if (c.B != std::nan(""))
+      if (!std::isnan(c.B))
         return c.B; // set by user
 
       double gamma_ratio = std::sqrt(1. - std::pow(FINESTRUCTURE * Z, 2.)) * EMASSC2 / energy; // gamma*m_e/E
@@ -149,7 +149,7 @@ namespace CRADLE
     inline double CalculateDTripleCorrelation(double mf, double mgt, double j_i, double j_f, int betaType, int Z, double energy)
     {
       CouplingConstants c = (DecayManager::GetInstance()).configOptions.couplingConstants;
-      if (c.D != std::nan(""))
+      if (!std::isnan(c.D))
         return c.D; // set by user
       // Only mixed decay factors
       if (j_i == j_f)
@@ -166,7 +166,7 @@ namespace CRADLE
     inline double CalculateAlignmentCorrelation(double mf, double mgt, double j_i, double j_f, int betaType, int Z, double energy)
     {
       CouplingConstants coupling = (DecayManager::GetInstance()).configOptions.couplingConstants;
-      if (coupling.c != std::nan(""))
+      if (!std::isnan(coupling.c))
         return coupling.c; // set by user
 
       double coulombCorr = FINESTRUCTURE * Z / std::sqrt(energy * energy / EMASSC2 / EMASSC2 - 1);
@@ -790,6 +790,21 @@ namespace CRADLE
         Warning("MaxAnalyticalGammaCorrelation: not implemented for a size >= 4, returning 1.0");
         return 1.0;
       }
+    }
+
+    inline double MaxSamplingGammaCorrelation(const vector<double> &a)
+    {
+      double x = -1;
+      double x_max = 1;
+      int N = 1e6;
+      double wmax = 0.;
+      while (x <= x_max)
+      {
+        wmax = std::max(wmax, GammaGammaW(x, a));
+        x += (double)2./N;
+      }
+
+      return wmax;
     }
   }
 }

@@ -12,6 +12,10 @@ namespace CRADLE {
     modeName(md), decayMode(dm), Q(q), intensity(i), lifetime(t), parentExcitationEnergy(pExEn), daughterExcitationEnergy(dExEn){
   }
 
+  // DecayChannel::DecayChannel(std::string md, DecayMode* dm, double q, double i, double t, double pExEn, double dExEn, double ph):
+  //   modeName(md), decayMode(dm), Q(q), intensity(i), lifetime(t), parentExcitationEnergy(pExEn), daughterExcitationEnergy(dExEn), PH(ph){
+  // }
+
   DecayChannel::DecayChannel(std::string md, DecayMode* dm, double q, double i, double t, double pExEn, double dExEn, std::pair<int, int> multipolarities, double mixingratio):
     modeName(md), decayMode(dm), Q(q), intensity(i), lifetime(t), parentExcitationEnergy(pExEn), daughterExcitationEnergy(dExEn), Multipolarities(multipolarities), mixingRatio(mixingratio){
   }

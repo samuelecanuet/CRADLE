@@ -149,6 +149,60 @@ inline void Message(std::string type, const std::string &message, int indent = 0
     std::cout << message << RESET << std::endl;
 }
 
+inline std::string NiceNucleusName(std::string name)
+{
+    // displaying in unicode Nucleus Name with superscript (from 32Ar to ^{32}Ar)
+    std::string result = "";
+    size_t pos = name.find_first_of("0123456789");
+    if (pos != std::string::npos)
+    {
+        std::string number = name.substr(pos, name.find_first_not_of("0123456789", pos) - pos);
+        std::string element = name.substr(pos + number.size());
+        for (char c : number)
+        {
+            switch (c)
+            {
+            case '0':
+                result += "⁰";
+                break;
+            case '1':
+                result += "¹";
+                break;
+            case '2':
+                result += "²";
+                break;
+            case '3':
+                result += "³";
+                break;
+            case '4':
+                result += "⁴";
+                break;
+            case '5':
+                result += "⁵";
+                break;
+            case '6':
+                result += "⁶";
+                break;
+            case '7':
+                result += "⁷";
+                break;
+            case '8':
+                result += "⁸";
+                break;
+            case '9':
+                result += "⁹";
+                break;
+            default:
+                result += c;
+            }
+        }
+        result += element;
+        return result;
+    }
+    else
+        return name;
+}
+
 inline void ProgressBar(int cEntry, int TotalEntries, clock_t start, std::string Prefix = "", int Step=10000, int threads=1)
 {
   if (cEntry % Step == 0)

@@ -32,11 +32,22 @@ struct ParticleData {
 };
 
 struct ChannelProperties {
-    std::vector<std::vector<double>>* distribution;
-    double MAX_distribution = 0.;
+    std::vector<std::vector<double>>* distribution; // 2D vector for the distribution of the channel
+    double MAX_distribution = 0.; // Maximum of the distribution for rejection sampling
     int betaType; // 0: Fermi, 1: Gamow-Teller, 2: Mixed 
-    double j_i = 0.;
-    double j_f = 0.;
+    double j_i = 0.; // Initial State Spin
+    double j_f = 0.; // Final State Spin
+    double j_m = 0.; // Intermediate State Spin (for gamma-gamma correlation)
+
+    // In the case of 4body decay 
+    double W_max_H = 0.; // Maximum of the distribution for the Hard Bremsstrahlung
+    double W_max_S = 0.; // Maximum of the distribution for the Virtual/Soft Bremsstrahlung
+    double PH = 0.; // Probability of Hard Bremsstrahlung
+    //
+
+    // Matrix element for Beta decay
+    double mf = -1;
+    double mgt = -1;
 };
 
 class DecayManager {
@@ -58,14 +69,20 @@ class DecayManager {
     void RegisterDecayMode(const std::string, DecayMode&);
     void RegisterParticle(Particle*);
     
-    void RegisterChannelPropreties(const std::string, std::vector<std::vector<double> >*, double, int, double, double);
+    void RegisterChannelPropreties(const std::string, std::vector<std::vector<double> >*, double, int, double, double, double = 0, double = 0., double = 0., double = 0.);
     ChannelProperties GetChannelPropreties(const std::string);
     std::vector<std::vector<double> >* GetChannelDistribution(const std::string);
     double GetChannelDistributionMax(const std::string);
     int GetChannelBetaType(const std::string);
     double GetChannelJi(const std::string);
     double GetChannelJf(const std::string);
-
+    double GetChannelJm(const std::string);
+    std::pair<double, double> GetChannelDistributionMaxs(const std::string);
+    double GetChannelPH(const std::string);
+    void SetChannelMf(const std::string, double);
+    double GetChannelMf(const std::string);
+    void SetChannelMgt(const std::string, double);
+    double GetChannelMgt(const std::string);
     
     void RegisterSpectrumGenerator(const std::string, SpectrumGenerator&);
     void RegisterBasicSpectrumGenerators();
@@ -80,12 +97,14 @@ class DecayManager {
     void WriteDecayData(std::string, std::string);
     void WriteConfigData(std::string);
 
+    std::map<const std::string, ChannelProperties> registeredChannelProperties;
+
   private:
     DecayManager() {};
     DecayManager(DecayManager const&);
     void operator=(DecayManager const&);
 
-    std::map<const std::string, ChannelProperties> registeredChannelProperties;
+    
     std::map<const std::string, DecayMode&> registeredDecayModes;
     std::vector<Particle*> particleStack;
     std::map<const int, Particle*> registeredParticles;

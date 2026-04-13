@@ -10,7 +10,7 @@ namespace CRADLE {
 
 struct NuclearOptions {
   std::string Name = "";
-  int Charge = 0;
+  int Charge = 1;
   int Nucleons = 0;
   double Energy = 0.0;
   double WeakMagnetism = 0.0;
@@ -38,6 +38,16 @@ struct CouplingConstants {
   std::complex<double> CTP = std::complex<double>(0.0,0.0);
   std::complex<double> CA = std::complex<double>(1.2754,0.0);
   std::complex<double> CAP = std::complex<double>(1.2754,0.0);
+
+  double iCS = 0.0;
+  double iCSP = 0.0;
+  double iCV = 0.0;
+  double iCVP = 0.0;
+  double iCT = 0.0;
+  double iCTP = 0.0;
+  double iCA = 0.0;
+  double iCAP = 0.0;
+  
   double b = std::nan("");
   double a = std::nan("");
   double A = std::nan("");
@@ -55,11 +65,13 @@ struct Cuts {
 struct BetaDecay {
   std::string Default = "Auto";
   std::string FermiFunction = "Advanced";
+  bool RadiativeCorrections = true;
+  double Cs = 1e-3;
 };
 
 struct Decay{
   bool InFlightDecay = true;
-  bool Nuclear_Level_Width = true;
+  bool NuclearLevelWidth = true;
   bool GammaGammaCorrelation = true;
 };
 
@@ -67,6 +79,7 @@ struct EnvOptions {
   std::string AMEdata;
   std::string Gammadata;
   std::string Radiationdata;
+  std::string BetaMixingRatios;
 };
 
 struct ConfigOptions{

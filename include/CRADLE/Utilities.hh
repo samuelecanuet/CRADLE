@@ -50,11 +50,10 @@ namespace CRADLE
     const double FINESTRUCTUREMASSC2 = 3727379.508; // keV
     const double FINESTRUCTURE = 0.0072973525664;
     const double E = 2.718281828459045;
-    const double HBAR = 6.58211889e-16;                         // ev*s
+    const double HBAR = 6.58211889e-16;           // ev*s
+    const double LAMBDA = -1.2754;                    
     const double NATURALLENGTH = HBAR * C / EMASSC2 / 1000.;    // m
     const double EULER_MASCHERONI_CONSTANT = 0.577215664901532; /**< the Euler-Mascheroni constant */
-
-    // enum DecayType { FERMI, GAMOW_TELLER, MIXED };
 
     const std::string atoms[] = {"H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt"};
 
@@ -143,7 +142,7 @@ namespace CRADLE
       }
       else
       {
-        std::cerr << "Erreur lors de l'ouverture du fichier " << gammaFileSS.str() << std::endl;
+        Warning("Erreur lors de l'ouverture du fichier " + gammaFileSS.str());
       }
       return -1.;
     }
@@ -173,14 +172,93 @@ namespace CRADLE
 
         if (Jpi_final == 0. && Jpi_init == 0.) /// J check
           return FERMI;
-        else
+        else if (std::abs(Jpi_final - Jpi_init) <= 1.) /// J check
           return GAMOW_TELLER;
+        else
+          return MIXED;
       }
       else
       {
         Error("Invalid beta decay type specified in config file. Please choose between Fermi, Gamow-Teller or Auto.");
         return -1;
       }
+    }
+
+    inline double GetBetaMixingRatio(int PDG)
+    {
+      DecayManager &dm = DecayManager::GetInstance();
+      std::string line;
+      std::ostringstream betaMixingRatioFileSS;
+      betaMixingRatioFileSS << dm.configOptions.envOptions.BetaMixingRatios;
+      std::ifstream betaMixingRatioFile(betaMixingRatioFileSS.str().c_str());
+
+      if (betaMixingRatioFile.is_open())
+      {
+        while (getline(betaMixingRatioFile, line))
+        {
+          std::string name;
+          double mixingRatio;
+
+          std::istringstream iss(line);
+          iss >> name >> mixingRatio;
+
+          if (name == PDGtoName(PDG))
+          {
+            if (dm.configOptions.general.Verbosity >= 2)
+              Info(Form("Found mixing ratio for %s: %f", name.c_str(), mixingRatio), 2);
+            return mixingRatio;
+          }
+        }
+        return 0.;
+      }
+      else
+      {
+        Error("Erreur lors de l'ouverture du fichier " + betaMixingRatioFileSS.str());
+      }
+      return 0.;
+    }
+
+    inline int FindMatrixElement(int initZ, int initA, double initExcEn, int finalZ, int finalA, double finalExcEn, double &mf, double &mgt)
+    {
+      DecayManager &dm = DecayManager::GetInstance();
+      double Ji = utilities::GetJpi(initA, initZ, initExcEn);
+      double Jf = utilities::GetJpi(finalA, finalZ, finalExcEn);
+
+      double DJ = std::abs(Jf - Ji);
+
+      if (Ji == 0. && Jf == 0.)
+      {
+        mf = 1.;
+        mgt = 0.;
+        return FERMI;
+      }
+      else if (DJ <= 1.)
+      {
+        double rho = utilities::GetBetaMixingRatio(GetPDG(initZ, initA));
+        if (rho != 0.) // Mixed found
+        {
+          mf = 1.;
+          mgt = rho / abs(LAMBDA);
+          return MIXED;
+        }
+        else // Gamow Teller
+        {
+          mf = 0.;
+          mgt = 1.;
+          return GAMOW_TELLER;
+        }
+      }
+      else // forbidden transition (set as Gamow Teller)
+      {
+        mf = 0.;
+        mgt = 1.;
+        return GAMOW_TELLER;
+      }
+    }
+    
+    inline int FindMatrixElement(Particle *initState, Particle *finalState, double &mf, double &mgt)
+    {
+      return FindMatrixElement(initState->GetCharge(), initState->GetCharge() + initState->GetNeutrons(), initState->GetExcitationEnergy(), finalState->GetCharge(), finalState->GetCharge() + finalState->GetNeutrons(), finalState->GetExcitationEnergy(), mf, mgt);
     }
     //////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -778,13 +856,13 @@ namespace CRADLE
       return vect;
     }
 
-    inline vector<double> GetParticleDirection(vector<double> &dir2, std::vector<double> &A)
+    inline vector<double> GetParticleDirection(ublas::vector<double> &dir2, std::vector<double> &A)
     {
       // Sampling not analytic
       dir2 = NormaliseVector(dir2);
 
       std::vector<std::vector<double>> dist;
-      int N = 1800;
+      int N = 500;
       double stepSize = 2. / N;
       double currentCosAngle = -1;
 
@@ -796,7 +874,7 @@ namespace CRADLE
         double W = 0.;
         for (std::vector<double>::size_type i = 0; i != A.size(); i++)
         {
-          W += A[i] * boost::math::legendre_p(i, currentCosAngle);
+          W += A[i] * boost::math::legendre_p(i==0?0:i*2, currentCosAngle);
         }
         if (W > W_max)
         {
@@ -852,7 +930,7 @@ namespace CRADLE
       /// Analytic solution for W(theta)=alpha+beta*cos(theta) with alpha = 1+b*m/W and beta = a*p/W
       if (std::abs(beta) > 1.)
       {
-        Error("Beta value " + std::to_string(beta) + " is out of physical range. Setting beta to 0.99.");
+        Error("Beta value " + std::to_string(beta) + " is out of physical range.");
       }
 
       double kappa = beta / alpha;

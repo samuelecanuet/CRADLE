@@ -93,6 +93,14 @@ target_link_libraries(Cradle PUBLIC ${ROOT_LIBRARIES})
 target_link_libraries(CRADLE++ PRIVATE Cradle)
 
 
+## XC ##
+add_executable(XCRadiativeCorrections LitteratureCrossCheck/RadiativeCorrections/XCRadiativeCorrections.cc)
+target_link_libraries(XCRadiativeCorrections PUBLIC Cradle)
+add_executable(XCGammaGammaCorrelation LitteratureCrossCheck/GammaGammaCorrelation/XCGammaGammaCorrelation.cc)
+target_link_libraries(XCGammaGammaCorrelation PUBLIC Cradle)
+add_executable(XCBetaDecayCorrelation LitteratureCrossCheck/BetaDecayCorrelation/XCBetaDecayCorrelation.cc)
+target_link_libraries(XCBetaDecayCorrelation PUBLIC Cradle)
+
 # add_custom_command(TARGET CRADLE++
 #                    POST_BUILD
 # 		   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:CRADLE++> ${PROJECT_BINARY_DIR}/bin/$<TARGET_FILE_NAME:CRADLE++>)
