@@ -90,8 +90,8 @@ int Reader(string filename = "")
 
     // Setup a correlations //
     vector<Correlation> Correlations;
-    Correlation gammagamma_60Co(22, 22, 1173, 1332);
-    Correlations.push_back(gammagamma_60Co);
+    // Correlation gammagamma_60Co(22, 22, 1173, 1332);
+    // Correlations.push_back(gammagamma_60Co);
 
     // Reading TTree
     int Verbosity = 0;

@@ -91,6 +91,7 @@ namespace CRADLE
     
     inline int GetCharge() const { return charge; };
     inline int GetNeutrons() const { return neutrons; };
+    inline int GetNucleons() const { return charge + neutrons; };
     inline double GetMass() const { return mass + currentExcitationEnergy; };
     inline ublas::vector<double> GetMomentum() const { return fourMomentum; };
     inline double GetExcitationEnergy() const { return currentExcitationEnergy; };
@@ -110,7 +111,7 @@ namespace CRADLE
     double GetTotalIntensity(double ) const; 
 
     Particle* lastGamma = nullptr;
-    inline void SetLastGamma(Particle* g) { lastGamma = g; };
+    inline void SetLastGamma(Particle* g) { delete lastGamma; lastGamma = g; };
     inline Particle* GetLastGamma() const { return lastGamma; };
   };
 

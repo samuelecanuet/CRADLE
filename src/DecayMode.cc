@@ -166,18 +166,19 @@ std::vector<Particle*> BetaRadiative::Decay(Particle* initState, double Q, doubl
   }
 
   // Init Final States
-  int Recoil_PDG = GetPDG(initState->GetCharge()-BetaSign, initState->GetCharge()+initState->GetNeutrons());
-  Particle* Recoil = dm.GetNewParticle(Recoil_PDG, initState->GetCharge()-BetaSign, initState->GetCharge()+initState->GetNeutrons());
+  double InitialMass = initState->GetMass();
+  int Recoil_PDG = GetPDG(initState->GetCharge()-BetaSign, initState->GetNucleons());
+  Particle* Recoil = dm.GetNewParticle(Recoil_PDG, initState->GetCharge()-BetaSign, initState->GetNucleons());
   Recoil->SetExcitationEnergy(daughterExEn);
-  double RecoilMass = Recoil->GetMass();
-  double RecoilRadius = utilities::ApproximateRadius(Recoil->GetCharge()+Recoil->GetNeutrons());
+  int Recoil_Z = Recoil->GetCharge();
+  double RecoilMass = InitialMass - Q;
+  double RecoilRadius = utilities::ApproximateRadius(Recoil->GetNucleons());
   Particle* ChargedLepton = dm.GetNewParticle(- BetaSign * 11);
   Particle* NeutralLepton = dm.GetNewParticle(BetaSign * 12);
-  double InitialMass = initState->GetMass();
   
   //Name as key for channel properties
   std::ostringstream oss;
-  oss << "BetaRadiative:" << "Sign" << BetaSign << "Z" << Recoil->GetCharge() << "A" << Recoil->GetCharge() + Recoil->GetNeutrons() << "Q" << Q;
+  oss << "BetaRadiative:" << "Sign" << BetaSign << "Z" << Recoil->GetCharge() << "A" << Recoil->GetNucleons() << "Q" << Q;
   std::string ChannelName = oss.str();
 
   // Build or Get info of the channel using oss
@@ -201,10 +202,10 @@ std::vector<Particle*> BetaRadiative::Decay(Particle* initState, double Q, doubl
   {
     double mixing_ratio;
     Type = utilities::FindMatrixElement(initState, Recoil, mf, mgt, mixing_ratio);
-    double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, E0/3.+utilities::EMASSC2, Recoil->GetCharge(), -BetaSign);
-    PH = radiativecorrections::PH(dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
-    W_max_H = radiativecorrections::WH_max(1e6, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
-    W_max_VS = radiativecorrections::W0VS_max(1e6, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
+    double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, E0/3.+utilities::EMASSC2, Recoil_Z, -BetaSign);
+    PH = radiativecorrections::PH(dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil_Z, RecoilRadius, BetaSign);
+    W_max_H = radiativecorrections::WH_max(1e5, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil_Z, RecoilRadius, BetaSign);
+    W_max_VS = radiativecorrections::W0VS_max(3e3, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil_Z, RecoilRadius, BetaSign);
     dm.RegisterChannelPropreties(ChannelName, nullptr, 0., Type, 0., 0., 0., W_max_H, W_max_VS, PH);
     dm.SetChannelMf(ChannelName, mf);
     dm.SetChannelMgt(ChannelName, mgt);
@@ -285,8 +286,8 @@ std::vector<Particle*> BetaRadiative::Decay(Particle* initState, double Q, doubl
       double N1_N2 = n_NEUTRINO[0] * n_ELECTRON[0] + n_NEUTRINO[1] * n_ELECTRON[1] + n_NEUTRINO[2] * n_ELECTRON[2];
       double N1_K = n_NEUTRINO[0] * n_GAMMA[0] + n_NEUTRINO[1] * n_GAMMA[1] + n_NEUTRINO[2] * n_GAMMA[2];
 
-      double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, E2, Recoil->GetCharge(), -BetaSign);
-      W_point_H = radiativecorrections::WH(E2, K, COS_GAMMA, N1_K, N1_N2, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
+      double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, E2*utilities::EMASSC2, Recoil_Z, -BetaSign);
+      W_point_H = radiativecorrections::WH(E2, K, COS_GAMMA, N1_K, N1_N2, mf, mgt, a, InitialMass, RecoilMass, Recoil_Z, RecoilRadius, BetaSign);
     }
 
     ublas::vector<double> velocity = -initState->GetVelocity();
@@ -346,8 +347,8 @@ std::vector<Particle*> BetaRadiative::Decay(Particle* initState, double Q, doubl
       E2 = 1. + (radiativecorrections::delta(InitialMass, RecoilMass, BetaSign) - 1.) * U[0];
       COS_NEUTRINO = 2. * U[1] - 1.;
 
-      double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, E2, Recoil->GetCharge(), -BetaSign);
-      W_point_VS = radiativecorrections::W0VS(E2, COS_NEUTRINO, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil->GetCharge(), RecoilRadius, BetaSign);
+      double a = correlation::CalculateBetaNeutrinoAsymmetry(mf, mgt, E2*utilities::EMASSC2, Recoil_Z, -BetaSign);
+      W_point_VS = radiativecorrections::W0VS(E2, COS_NEUTRINO, dm.configOptions.betaDecay.Cs, mf, mgt, a, InitialMass, RecoilMass, Recoil_Z, RecoilRadius, BetaSign);
     }
 
     double E10 = radiativecorrections::delta(InitialMass, RecoilMass, BetaSign) - E2;
@@ -384,7 +385,7 @@ std::vector<Particle*> BetaRadiative::Decay(Particle* initState, double Q, doubl
     ChargedLepton_FourMomentum(3) = ChargedLeptonMomentum * n_ELECTRON[2];
     ChargedLepton->SetMomentum(ChargedLepton_FourMomentum);
 
-    ThreeBodyDecay(velocity, ChargedLepton, NeutralLepton, Recoil, n_NEUTRINO, Q);
+    ThreeBodyDecay(velocity, ChargedLepton, NeutralLepton, Recoil, n_NEUTRINO, E0);
 
     finalStates.push_back(Recoil);
     finalStates.push_back(ChargedLepton);
@@ -417,8 +418,8 @@ std::vector<Particle*> Beta::Decay(Particle* initState, double Q, double daughte
   }
 
   // Init Final States
-  int Recoil_PDG = GetPDG(initState->GetCharge()-BetaSign, initState->GetCharge()+initState->GetNeutrons());
-  Particle* Recoil = dm.GetNewParticle(Recoil_PDG, initState->GetCharge()-BetaSign, initState->GetCharge()+initState->GetNeutrons());
+  int Recoil_PDG = GetPDG(initState->GetCharge()-BetaSign, initState->GetNucleons());
+  Particle* Recoil = dm.GetNewParticle(Recoil_PDG, initState->GetCharge()-BetaSign, initState->GetNucleons());
   Recoil->SetExcitationEnergy(daughterExEn);
   Particle* ChargedLepton = dm.GetNewParticle(- BetaSign * 11);
   Particle* NeutralLepton = dm.GetNewParticle(BetaSign * 12);
@@ -427,7 +428,7 @@ std::vector<Particle*> Beta::Decay(Particle* initState, double Q, double daughte
 
   // Name as key for channel properties
   std::ostringstream oss;
-  oss << "Beta:" << "Sign" << BetaSign << "Z" << Recoil_Z << "A" << Recoil_Z + Recoil->GetNeutrons() << "Q" << Q;
+  oss << "Beta:" << "Sign" << BetaSign << "Z" << Recoil_Z << "A" << Recoil->GetNucleons() << "Q" << Q;
   std::string ChannelName = oss.str();
   // Build or Get info of the channel using oss
   double mf;
@@ -461,8 +462,8 @@ std::vector<Particle*> Beta::Decay(Particle* initState, double Q, double daughte
       ((*dist)[i])[1] = SH * (1 + b * utilities::EMASSC2 / E + (-BetaSign) * 4. / 3. * E / (initState->GetMass()) * dm.configOptions.nuclear.WeakMagnetism);
     }
     dist_max = utilities::CalculateMax(*dist);
-    j_i = utilities::GetJpi(initState->GetCharge() + initState->GetNeutrons(), initState->GetCharge(), initState->GetExcitationEnergy());
-    j_f = utilities::GetJpi(Recoil_Z + Recoil->GetNeutrons(), Recoil_Z, Recoil->GetExcitationEnergy());    
+    j_i = utilities::GetJpi(initState->GetNucleons(), initState->GetCharge(), initState->GetExcitationEnergy());
+    j_f = utilities::GetJpi(Recoil->GetNucleons(), Recoil_Z, Recoil->GetExcitationEnergy());    
     dm.RegisterChannelPropreties(ChannelName, dist, dist_max, Type, j_i, j_f);
     dm.SetChannelMf(ChannelName, mf);
     dm.SetChannelMgt(ChannelName, mgt);
@@ -578,8 +579,8 @@ std::vector<Particle*> Proton::Decay(Particle* initState, double Q, double daugh
   if (dm.configOptions.decay.NuclearLevelWidth) 
     Q = utilities::BreitWigner(Q, initState->GetLifetime());
   
-  int daughter_PDG = GetPDG(initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons()-1);
-  Particle* Recoil = dm.GetNewParticle(daughter_PDG, initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons()-1);
+  int daughter_PDG = GetPDG(initState->GetCharge()-1, initState->GetNucleons()-1);
+  Particle* Recoil = dm.GetNewParticle(daughter_PDG, initState->GetCharge()-1, initState->GetNucleons()-1);
   Recoil->SetExcitationEnergy(daughterExEn);
   Particle* p = dm.GetNewParticle(2212);
 
@@ -599,8 +600,8 @@ std::vector<Particle*> Alpha::Decay(Particle* initState, double Q, double daught
   if (dm.configOptions.decay.NuclearLevelWidth) 
     Q = utilities::BreitWigner(Q, initState->GetLifetime());
 
-  int daughter_PDG = GetPDG(initState->GetCharge()-2, initState->GetCharge()+initState->GetNeutrons()-4);
-  Particle* Recoil = dm.GetNewParticle(daughter_PDG, initState->GetCharge()-2, initState->GetCharge()+initState->GetNeutrons()-4);
+  int daughter_PDG = GetPDG(initState->GetCharge()-2, initState->GetNucleons()-4);
+  Particle* Recoil = dm.GetNewParticle(daughter_PDG, initState->GetCharge()-2, initState->GetNucleons()-4);
   Particle* alpha = dm.GetNewParticle(1000020040);
   Recoil->SetExcitationEnergy(daughterExEn);
 
@@ -708,8 +709,8 @@ std::vector<Particle*> Gamma::Decay(Particle* initState, double Q, double daught
 std::vector<Particle*> ElectronCapture::Decay(Particle* initState, double Q, double daughterExEn) {
   std::vector<Particle*> finalStates;
 
-  int daughter_PDG = GetPDG(initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons());
-  Particle* Recoil = DecayManager::GetInstance().GetNewParticle(daughter_PDG, initState->GetCharge()-1, initState->GetCharge()+initState->GetNeutrons());
+  int daughter_PDG = GetPDG(initState->GetCharge()-1, initState->GetNucleons());
+  Particle* Recoil = DecayManager::GetInstance().GetNewParticle(daughter_PDG, initState->GetCharge()-1, initState->GetNucleons());
   Particle* enu = DecayManager::GetInstance().GetNewParticle(12);
   Recoil->SetExcitationEnergy(daughterExEn);
 

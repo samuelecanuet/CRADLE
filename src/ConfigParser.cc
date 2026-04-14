@@ -89,6 +89,7 @@ namespace CRADLE
     CLI::App *cmd = app.add_subcommand("BetaDecay", "This is the beta decay subcommand")->ignore_case();
     cmd->add_option("--Default", betaDecay.Default, "");
     cmd->add_option("--FermiFunction", betaDecay.FermiFunction, "");
+    cmd->add_option("--BetaSpectrumCorrections", betaDecay.BetaSpectrumCorrections, "")->ignore_case();
     cmd->add_option("--RadiativeCorrections", betaDecay.RadiativeCorrections, "")->ignore_case();
     cmd->add_option("--Cs", betaDecay.Cs, "")->ignore_case();
   }
@@ -192,6 +193,7 @@ namespace CRADLE
     Message("BetaDecay", "", 0, "CYAN");
     Message("BetaDecay", "Default: " + configOptions.betaDecay.Default, 1, "blue");
     Message("BetaDecay", "FermiFunction: " + configOptions.betaDecay.FermiFunction, 1, "blue");
+    Message("BetaDecay", Form("BetaSpectrumCorrections: %s", configOptions.betaDecay.BetaSpectrumCorrections ? "true" : "false"), 1, "blue");
     Message("BetaDecay", Form("RadiativeCorrections: %s", configOptions.betaDecay.RadiativeCorrections ? "true" : "false"), 1, "blue");
     Message("BetaDecay", Form("Cs: %.5f", configOptions.betaDecay.Cs), 1, "blue");
 

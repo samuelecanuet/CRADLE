@@ -64,7 +64,8 @@ struct Cuts {
 
 struct BetaDecay {
   std::string Default = "Auto";
-  std::string FermiFunction = "Advanced";
+  std::string FermiFunction = "Advanced";   
+  bool BetaSpectrumCorrections = true;
   bool RadiativeCorrections = true;
   double Cs = 1e-3;
 };

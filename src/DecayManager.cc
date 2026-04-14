@@ -8,6 +8,10 @@
 #include "CRADLE/ECShell.hh"
 #include "CRADLE/RadiativeCorrections.hh"
 
+#include <ROOT/TBufferMerger.hxx>
+#include <ROOT/TThreadExecutor.hxx>
+#include <ROOT/RDataFrame.hxx>
+
 // #include <boost/progress.hpp>
 #include <fstream>
 #include <sstream>
@@ -110,7 +114,7 @@ namespace CRADLE
 
     // only for gamma cascade
     cp.j_m = j_m;
-    
+
     // only for radiative beta decay
     cp.W_max_H = W_max_H;
     cp.W_max_S = W_max_VS;
@@ -238,7 +242,6 @@ namespace CRADLE
     return registeredChannelProperties.at(name).mgt;
   }
 
-
   void DecayManager::RegisterBasicParticles()
   {
     RegisterParticle(new Particle(NametoPDG("e-"), utilities::EMASSC2, -1, 0, 0.5, 0.));
@@ -296,7 +299,6 @@ namespace CRADLE
       RegisterSpectrumGenerator("Beta", SimpleBetaDecay::GetInstance());
       RegisterSpectrumGenerator("Beta_RC", AdvancedBetaDecay::GetInstance());
     }
-    
   }
 
   void DecayManager::ListRegisteredParticles()
@@ -315,7 +317,7 @@ namespace CRADLE
   }
 
   void DecayManager::WriteDecayData(string filename, string type)
-  { 
+  {
     std::ifstream DataFile(filename.c_str());
     if (!DataFile.is_open())
     {
@@ -330,17 +332,16 @@ namespace CRADLE
     TObjString *stringObject_data = new TObjString(content.c_str());
     if (outputFile == nullptr)
       return;
-    
+
     if (outputFile->GetDirectory("DecayData") == nullptr)
       outputFile->mkdir("DecayData");
-    if (outputFile->GetDirectory(Form("DecayData/%s",type.c_str())) == nullptr)
-      outputFile->mkdir(Form("DecayData/%s",type.c_str()));
-        
-    
-    filename = filename.substr(filename.find_last_of("/\\") + 1);   
-    outputFile->cd(Form("DecayData/%s",type.c_str()));
+    if (outputFile->GetDirectory(Form("DecayData/%s", type.c_str())) == nullptr)
+      outputFile->mkdir(Form("DecayData/%s", type.c_str()));
+
+    filename = filename.substr(filename.find_last_of("/\\") + 1);
+    outputFile->cd(Form("DecayData/%s", type.c_str()));
     stringObject_data->Write(filename.c_str(), TObject::kOverwrite);
-    outputFile->cd();  
+    outputFile->cd();
   }
 
   void DecayManager::WriteConfigData(string filename)
@@ -371,7 +372,7 @@ namespace CRADLE
   {
     if (configOptions.general.Verbosity >= 2)
       Info("Generating nucleus " + name + " with Z = " + std::to_string(Z) + " and A = " + std::to_string(A));
-    
+
     std::ostringstream filename;
     filename << configOptions.envOptions.Radiationdata;
     filename << "/z" << Z << ".a" << A;
@@ -442,32 +443,32 @@ namespace CRADLE
           if (mode.find("K") != string::npos)
           {
             dc = new DecayChannel(mode, &GetDecayMode("EC"), Q - ecshell::GetBindingEnergy(Z, ecshell::K), intensity, lifetime, excitationEnergy,
-                                 daughterExcitationEnergy);
+                                  daughterExcitationEnergy);
           }
           else if (mode.find("L") != string::npos)
-          { 
-            // L1 
-            dc = new DecayChannel(mode, &GetDecayMode("EC"), Q - ecshell::GetBindingEnergy(Z, ecshell::L1), intensity*ecshell::ProbabilityL1(Z), lifetime, excitationEnergy,
-                                 daughterExcitationEnergy);
+          {
+            // L1
+            dc = new DecayChannel(mode, &GetDecayMode("EC"), Q - ecshell::GetBindingEnergy(Z, ecshell::L1), intensity * ecshell::ProbabilityL1(Z), lifetime, excitationEnergy,
+                                  daughterExcitationEnergy);
 
             // L2
             if (NbShell > 2)
             {
-              dc = new DecayChannel(mode, &GetDecayMode("EC"), Q - ecshell::GetBindingEnergy(Z, ecshell::L2), intensity*(1-ecshell::ProbabilityL1(Z)), lifetime, excitationEnergy,
-                                   daughterExcitationEnergy);
+              dc = new DecayChannel(mode, &GetDecayMode("EC"), Q - ecshell::GetBindingEnergy(Z, ecshell::L2), intensity * (1 - ecshell::ProbabilityL1(Z)), lifetime, excitationEnergy,
+                                    daughterExcitationEnergy);
             }
           }
           else
           {
             // M1
-            dc = new DecayChannel(mode, &GetDecayMode("EC"), Q - ecshell::GetBindingEnergy(Z, ecshell::M1), intensity*ecshell::ProbabilityM1(Z), lifetime, excitationEnergy,
-                                 daughterExcitationEnergy);
-            
+            dc = new DecayChannel(mode, &GetDecayMode("EC"), Q - ecshell::GetBindingEnergy(Z, ecshell::M1), intensity * ecshell::ProbabilityM1(Z), lifetime, excitationEnergy,
+                                  daughterExcitationEnergy);
+
             // M2
             if (NbShell > 4)
             {
-              dc = new DecayChannel(mode, &GetDecayMode("EC"), Q - ecshell::GetBindingEnergy(Z, ecshell::M2), intensity*(1-ecshell::ProbabilityM1(Z)), lifetime, excitationEnergy,
-                                   daughterExcitationEnergy);
+              dc = new DecayChannel(mode, &GetDecayMode("EC"), Q - ecshell::GetBindingEnergy(Z, ecshell::M2), intensity * (1 - ecshell::ProbabilityM1(Z)), lifetime, excitationEnergy,
+                                    daughterExcitationEnergy);
             }
           }
         }
@@ -476,14 +477,15 @@ namespace CRADLE
           if (mode.find("Plus") != string::npos)
             Q = -Q;
           string mode = "Beta";
-          if (configOptions.betaDecay.RadiativeCorrections) mode += "_RC";
+          if (configOptions.betaDecay.RadiativeCorrections)
+            mode += "_RC";
           dc = new DecayChannel(mode, &GetDecayMode(mode), Q, intensity, lifetime, excitationEnergy,
-                               daughterExcitationEnergy);
+                                daughterExcitationEnergy);
         }
         else
         {
           dc = new DecayChannel(mode, &GetDecayMode(mode), Q, intensity, lifetime, excitationEnergy,
-                               daughterExcitationEnergy);
+                                daughterExcitationEnergy);
         }
         p->AddDecayChannel(dc);
       }
@@ -512,7 +514,7 @@ namespace CRADLE
 
         std::istringstream iss(line);
         iss >> levelNr >> flag >> initEnergy >> lifetime >> angMom >> nGammas;
-      
+
         double other_process_intensity = p->GetTotalIntensity(initEnergy);
         double feeding_intensity = 0.;
         // looking for decay feeding the level in registeredParticles
@@ -568,7 +570,7 @@ namespace CRADLE
 
             if (convIntensity == 0)
               continue;
-            
+
             DecayChannel *dcConvK =
                 new DecayChannel("ConversionElectron", &GetDecayMode("ConversionElectron"), E - ecshell::GetBindingEnergy(p->GetCharge(), ecshell::K), intensity * convIntensity * (1. + convIntensity) * kCoeff,
                                  lifetime, initEnergy, initEnergy - E);
@@ -647,7 +649,6 @@ namespace CRADLE
     outputName = configOptions.general.Output;
     NRTHREADS = configOptions.general.Threads;
 
-  
     if (initStateName != "" && configOptions.nuclear.Nucleons > 0)
     {
       struct stat infoRD;
@@ -679,7 +680,6 @@ namespace CRADLE
     }
   }
 
-
   std::vector<ParticleData> DecayManager::GenerateEvent_ROOT(int eventNr, int verbosity)
   {
     double time = 0.;
@@ -697,7 +697,7 @@ namespace CRADLE
     // momentum[3] = sqrt(ini->GetKinEnergy() * 2.0 * ini->GetMass());
     // ini->SetMomentum(momentum);
     /////////////////////////////////////////////////////////////////////////////
-    
+
     if (this->configOptions.general.Verbosity >= 2)
       Start("## Event n°" + std::to_string(eventNr));
 
@@ -891,76 +891,189 @@ namespace CRADLE
     Start("Generating " + std::to_string(nrParticles) + " events...");
 
     std::ios::sync_with_stdio(false);
-    int show_progress = 0;
-    int steppingProgress = std::max(1, nrParticles / 1000);
+    // int show_progress = 0;
+    int steppingProgress = std::max(1, nrParticles / 10000);
     clock_t start = clock();
 
     if (outputName.find("root") != std::string::npos)
     {
-      outputFile = new TFile(outputName.c_str(), "RECREATE");
-      if (!outputFile->IsOpen())
+      // outputFile = new TFile(outputName.c_str(), "RECREATE");
+      // if (!outputFile->IsOpen())
+      // {
+      //   Error("Could not open output file " + outputName);
+      //   return false;
+      // }
+      // TTree *tree = new TTree("ParticleTree", "Tree for Particle Data");
+      // if (!tree)
+      // {
+      //   Error("Could not create TTree in output file " + outputName);
+      //   return false;
+      // }
+      // vector<double> Time;
+      // vector<int> Code;
+      // vector<double> Kinetic_energy;
+      // vector<double> Excitation_energy;
+      // vector<double> p;
+      // vector<double> Px;
+      // vector<double> Py;
+      // vector<double> Pz;
+
+      // tree->Branch("time", &Time);
+      // tree->Branch("code", &Code);
+      // tree->Branch("energy", &Kinetic_energy);
+      // tree->Branch("excitation_energy", &Excitation_energy);
+      // tree->Branch("p", &p);
+      // tree->Branch("px", &Px);
+      // tree->Branch("py", &Py);
+      // tree->Branch("pz", &Pz);
+
+      //////// OPTIMIZATION WITH THREADPOOL //////////////
+      // ThreadPool pool(NRTHREADS);
+      // std::mutex result_mutex;
+
+      // for (int i = 0; i < nrParticles; ++i)
+      // {
+      //   pool.enqueue([&, i]
+      //                {
+      //     auto particles = this->GenerateEvent_ROOT(i, verbosity);
+
+      //     std::lock_guard<std::mutex> lock(result_mutex);
+
+      //     for (const auto &particle : particles) {
+      //         Time.push_back(particle.time);
+      //         Code.push_back(particle.code);
+      //         Kinetic_energy.push_back(particle.kinetic_energy);
+      //         Excitation_energy.push_back(particle.excitation_energy);
+      //         p.push_back(particle.p);
+      //         Px.push_back(particle.px);
+      //         Py.push_back(particle.py);
+      //         Pz.push_back(particle.pz);
+      //     }
+      //     tree->Fill();
+      //     Time.clear(); Code.clear(); Kinetic_energy.clear();
+      //     Excitation_energy.clear(); p.clear();
+      //     Px.clear(); Py.clear(); Pz.clear();
+      //     show_progress++;
+      //     ProgressBar(show_progress, nrParticles, start, "", steppingProgress, NRTHREADS);
+      //     });
+      // }
+      // pool.wait_all();
+
+      // ...
+
+      ROOT::EnableThreadSafety();
+      // ROOT::EnableImplicitMT(NRTHREADS); // not needed with TThreadExecutor
+
+      std::atomic<int> show_progress{0};
+
       {
+        // Keep merger inside a scope so it is destroyed before reopening the file
+        ROOT::TBufferMerger merger(outputName.c_str(), "RECREATE");
+        ROOT::TThreadExecutor executor(NRTHREADS);
+
+        const int chunkSize = 100000;
+        std::vector<std::pair<int, int>> ranges;
+        ranges.reserve((nrParticles + chunkSize - 1) / chunkSize);
+
+        for (int first = 0; first < nrParticles; first += chunkSize)
+        {
+          ranges.emplace_back(first, std::min(first + chunkSize, nrParticles));
+        }
+
+        std::atomic<int> treeCounter{0};
+
+        executor.Foreach([&](const std::pair<int, int> &range)
+                         {
+        auto file = merger.GetFile();
+        file->cd();
+
+        // Unique tree name per task/chunk
+        const int treeId = treeCounter++;
+        const std::string treeName = "ParticleTree_" + std::to_string(treeId);
+
+        TTree tree(treeName.c_str(), "ParticleTree");
+        tree.SetDirectory(file.get());
+
+        std::vector<double> Time, Kinetic_energy, Excitation_energy, p, Px, Py, Pz;
+        std::vector<int> Code;
+
+        tree.Branch("time",              &Time);
+        tree.Branch("code",              &Code);
+        tree.Branch("kinetic_energy",    &Kinetic_energy);
+        tree.Branch("excitation_energy", &Excitation_energy);
+        tree.Branch("p",                 &p);
+        tree.Branch("px",                &Px);
+        tree.Branch("py",                &Py);
+        tree.Branch("pz",                &Pz);
+
+        tree.SetAutoFlush(-20 * 1024 * 1024);
+
+        std::vector<ParticleData> particles;
+        particles.reserve(16);
+
+        Time.reserve(16);
+        Code.reserve(16);
+        Kinetic_energy.reserve(16);
+        Excitation_energy.reserve(16);
+        p.reserve(16);
+        Px.reserve(16);
+        Py.reserve(16);
+        Pz.reserve(16);
+
+        for (int i = range.first; i < range.second; ++i) {
+            particles = this->GenerateEvent_ROOT(i, verbosity);
+            const std::size_t n = particles.size();
+
+            Time.clear();
+            Code.clear();
+            Kinetic_energy.clear();
+            Excitation_energy.clear();
+            p.clear();
+            Px.clear();
+            Py.clear();
+            Pz.clear();
+
+            if (Time.capacity() < n)              Time.reserve(n);
+            if (Code.capacity() < n)              Code.reserve(n);
+            if (Kinetic_energy.capacity() < n)    Kinetic_energy.reserve(n);
+            if (Excitation_energy.capacity() < n) Excitation_energy.reserve(n);
+            if (p.capacity() < n)                 p.reserve(n);
+            if (Px.capacity() < n)                Px.reserve(n);
+            if (Py.capacity() < n)                Py.reserve(n);
+            if (Pz.capacity() < n)                Pz.reserve(n);
+
+            for (const auto& particle : particles) {
+                Time.push_back(particle.time);
+                Code.push_back(particle.code);
+                Kinetic_energy.push_back(particle.kinetic_energy);
+                Excitation_energy.push_back(particle.excitation_energy);
+                p.push_back(particle.p);
+                Px.push_back(particle.px);
+                Py.push_back(particle.py);
+                Pz.push_back(particle.pz);
+            }
+
+            tree.Fill();
+
+            const int done = ++show_progress;
+            if (done % steppingProgress == 0 || done == nrParticles) {
+                ProgressBar(done, nrParticles, start, "", steppingProgress, NRTHREADS);
+            }
+        }
+
+        file->cd();
+        tree.Write("", TObject::kOverwrite);
+        file->Write(); }, ranges);
+
+      }
+
+      MergeParticleTreesInPlace(outputName);
+      
+      outputFile = new TFile(outputName.c_str(), "UPDATE");
+      if (!outputFile->IsOpen())      {
         Error("Could not open output file " + outputName);
         return false;
       }
-      TTree *tree = new TTree("ParticleTree", "Tree for Particle Data");
-      if (!tree)
-      {
-        Error("Could not create TTree in output file " + outputName);
-        return false;
-      }
-      vector<double> Time;
-      vector<int> Code;
-      vector<double> Kinetic_energy;
-      vector<double> Excitation_energy;
-      vector<double> p;
-      vector<double> Px;
-      vector<double> Py;
-      vector<double> Pz;
-
-      tree->Branch("time", &Time);
-      tree->Branch("code", &Code);
-      tree->Branch("energy", &Kinetic_energy);
-      tree->Branch("excitation_energy", &Excitation_energy);
-      tree->Branch("p", &p);
-      tree->Branch("px", &Px);
-      tree->Branch("py", &Py);
-      tree->Branch("pz", &Pz);
-
-      //////// OPTIMIZATION WITH THREADPOOL //////////////
-      ThreadPool pool(NRTHREADS);
-      std::mutex result_mutex;
-
-      for (int i = 0; i < nrParticles; ++i)
-      {
-        pool.enqueue([&, i]
-                     {
-          auto particles = this->GenerateEvent_ROOT(i, verbosity);
-          
-          std::lock_guard<std::mutex> lock(result_mutex);
-
-          for (const auto &particle : particles) {
-              Time.push_back(particle.time);
-              Code.push_back(particle.code);
-              Kinetic_energy.push_back(particle.kinetic_energy);
-              Excitation_energy.push_back(particle.excitation_energy);
-              p.push_back(particle.p);
-              Px.push_back(particle.px);
-              Py.push_back(particle.py);
-              Pz.push_back(particle.pz);
-          }
-          tree->Fill();
-          Time.clear(); Code.clear(); Kinetic_energy.clear();
-          Excitation_energy.clear(); p.clear();
-          Px.clear(); Py.clear(); Pz.clear();
-          show_progress++; 
-          ProgressBar(show_progress, nrParticles, start, "", steppingProgress, NRTHREADS); 
-          });
-      }
-
-      pool.wait_all();
-      outputFile->Write();
-
       // Writting Data File
       for (const auto &p : registeredParticles)
       {
@@ -972,14 +1085,14 @@ namespace CRADLE
       }
       // Writting config file
       WriteConfigData(ConfigFilename);
-
       outputFile->Close();
-      
+
       ///////////////////////////////////////////////////
     }
 
     else if (outputName.find("txt") != std::string::npos)
     {
+      int show_progress = 0;
       std::ofstream fileStream;
       fileStream.open(outputName.c_str());
       for (int i = 0; i < nrParticles; i += NRTHREADS)
@@ -995,8 +1108,8 @@ namespace CRADLE
         for (int t = 0; t < threads; t++)
         {
           fileStream << f[t].get();
-          show_progress++; 
-          ProgressBar(show_progress, nrParticles, start, "", steppingProgress, NRTHREADS); 
+          show_progress++;
+          ProgressBar(show_progress, nrParticles, start, "", steppingProgress, NRTHREADS);
         }
       }
       fileStream.flush();

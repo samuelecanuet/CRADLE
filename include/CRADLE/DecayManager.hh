@@ -13,6 +13,7 @@
 #include "TFile.h"
 #include "TTree.h"
 #include "TObjString.h"
+#include "TKey.h"
 
 namespace CRADLE {
 
@@ -99,6 +100,10 @@ class DecayManager {
 
     std::map<const std::string, ChannelProperties> registeredChannelProperties;
 
+    // bool MergeParticleTreesInPlace(const std::string& filename,
+    //                            const std::string& inputPrefix = "ParticleTree_",
+    //                            const std::string& mergedTreeName = "ParticleTree");
+
   private:
     DecayManager() {};
     DecayManager(DecayManager const&);
@@ -117,6 +122,123 @@ class DecayManager {
 
     TFile *outputFile;
 };
+
+
+inline bool MergeParticleTreesInPlace(const std::string& filename,
+                               const std::string& inputPrefix = "ParticleTree_",
+                               const std::string& mergedTreeName = "ParticleTree")
+{
+  DecayManager& dm = DecayManager::GetInstance();
+    Start("Merging Thread TTree");
+
+    TFile* file = TFile::Open(filename.c_str(), "UPDATE");
+    if (!file || file->IsZombie()) {
+        Error("Error: output ROOT file is corrupted or not finalized: " + filename);
+        if (file) {
+            file->Close();
+            delete file;
+        }
+        return false;
+    }
+
+    std::vector<std::string> treeNames;
+
+    TIter next(file->GetListOfKeys());
+    TKey* key = nullptr;
+    while ((key = dynamic_cast<TKey*>(next()))) {
+        // Do not instantiate objects just to check the class
+        if (std::string(key->GetClassName()) != "TTree")
+            continue;
+
+        const std::string name = key->GetName();
+        if (name.rfind(inputPrefix, 0) == 0)
+            treeNames.push_back(name);
+    }
+
+    if (treeNames.empty()) {
+        Error("No trees found with prefix " + inputPrefix + " in file " + filename);
+        file->Close();
+        delete file;
+        return false;
+    }
+
+    std::sort(treeNames.begin(), treeNames.end());
+
+    // Remove previous merged tree if present
+    if (file->GetListOfKeys()->FindObject(mergedTreeName.c_str())) {
+        file->Delete((mergedTreeName + ";*").c_str());
+        file->SaveSelf(kTRUE);
+    }
+
+    TTree* firstTree = nullptr;
+    file->GetObject(treeNames.front().c_str(), firstTree);
+    if (!firstTree) {
+        Warning("Cannot read first tree: " + treeNames.front() + ". Aborting merge.");
+        file->Close();
+        delete file;
+        return false;
+    }
+
+    file->cd();
+
+    // IMPORTANT: raw pointer, ROOT/file owns it after SetDirectory
+    TTree* mergedTree = firstTree->CloneTree(0);
+    if (!mergedTree) {
+        Warning("Failed to clone tree structure for merging. Aborting merge.");
+        file->Close();
+        delete file;
+        return false;
+    }
+
+    mergedTree->SetName(mergedTreeName.c_str());
+    mergedTree->SetTitle(mergedTreeName.c_str());
+    mergedTree->SetDirectory(file);
+
+    Long64_t totalEntries = 0;
+
+    for (const auto& name : treeNames) {
+        TTree* inTree = nullptr;
+        file->GetObject(name.c_str(), inTree);
+        if (!inTree) {
+            Warning("Cannot read tree: " + name + ". Skipping.");
+            continue;
+        }
+
+        const Long64_t copied = mergedTree->CopyEntries(inTree, -1, "fast");
+        totalEntries += copied;
+
+        if (dm.configOptions.general.Verbosity >= 2) {
+            Info("Merged tree " + name + " with " + std::to_string(inTree->GetEntries()) + " entries.", 1);
+        }
+    }
+
+    file->cd();
+    mergedTree->Write("", TObject::kOverwrite);
+    file->SaveSelf(kTRUE);
+    file->Flush();
+
+    if (dm.configOptions.general.Verbosity >= 2) {
+        Info("Merged tree " + mergedTreeName + " written with " +
+             std::to_string(mergedTree->GetEntries()) + " entries.", 1);
+    }
+
+    // Delete original thread trees only after merged tree is safely written
+    for (const auto& name : treeNames) {
+        file->Delete((name + ";*").c_str());
+        if (dm.configOptions.general.Verbosity >= 2) {
+            Info("Deleted original tree " + name + " from file after merging.", 1);
+        }
+    }
+
+    file->SaveSelf(kTRUE);
+    file->Write("", TObject::kOverwrite);
+    file->Flush();
+    file->Close();
+    delete file;
+
+    Success("TTree has been merged successfully");
+    return true;
+}
 
 }//End of CRADLE namespace
 #endif

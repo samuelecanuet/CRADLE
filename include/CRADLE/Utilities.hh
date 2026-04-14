@@ -794,12 +794,11 @@ namespace CRADLE
         DecayManager &dm = DecayManager::GetInstance();
         std::tie(cShape, cNS) = CCorrectionComponents(W, W0, Z, A, R, betaSign, decayType, -LAMBDA, -229, 1, 4. * A, 1. * A, 0, 0);
         double CCorr = cShape + cNS;
-        // USED 
-        // F x L0 x C x U x S x R x N x r x Q
-        return PhaseSpace(W, W0) * FermiFunction(Z, W, R, betaSign) * AtomicExchangeCorrection(W, Z) * L0Correction(W, Z, R, betaSign) * CCorr * UCorrection(W, Z, betaSign) * AtomicScreeningCorrection(W, Z, betaSign) * RadiativeCorrection(W, W0, Z, R, 1.27, 4.706) * RecoilCorrection(W, W0, A, decayType, mixing_ratio) * AtomicMismatchCorrection(W, W0, Z, A, betaSign) * QCorrection(W, W0, Z, A, betaSign, mf, mgt);
-
-        // No Correction
-        // return PhaseSpace(W, W0)*FermiFunction(Z, W, R, betaSign);
+        
+        if (dm.configOptions.betaDecay.BetaSpectrumCorrections)
+          return PhaseSpace(W, W0) * FermiFunction(Z, W, R, betaSign) * AtomicExchangeCorrection(W, Z) * L0Correction(W, Z, R, betaSign) * CCorr * UCorrection(W, Z, betaSign) * AtomicScreeningCorrection(W, Z, betaSign) * RadiativeCorrection(W, W0, Z, R, 1.27, 4.706) * RecoilCorrection(W, W0, A, decayType, mixing_ratio) * AtomicMismatchCorrection(W, W0, Z, A, betaSign) * QCorrection(W, W0, Z, A, betaSign, mf, mgt);
+        else
+          return PhaseSpace(W, W0)*FermiFunction(Z, W, R, betaSign);       
       }
       else
       {

@@ -30,6 +30,7 @@ Energy=1.0
 [BetaDecay]
 Default=Auto
 FermiFunction=Advanced
+BetaSpectrumCorrections=false
 RadiativeCorrections=false
 Cs=0.001
 [Decay]
