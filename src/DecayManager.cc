@@ -971,7 +971,7 @@ namespace CRADLE
         ROOT::TBufferMerger merger(outputName.c_str(), "RECREATE");
         ROOT::TThreadExecutor executor(NRTHREADS);
 
-        const int chunkSize = 100000;
+        const int chunkSize = 1000000;
         std::vector<std::pair<int, int>> ranges;
         ranges.reserve((nrParticles + chunkSize - 1) / chunkSize);
 
@@ -999,7 +999,7 @@ namespace CRADLE
 
         tree.Branch("time",              &Time);
         tree.Branch("code",              &Code);
-        tree.Branch("kinetic_energy",    &Kinetic_energy);
+        tree.Branch("energy",    &Kinetic_energy);
         tree.Branch("excitation_energy", &Excitation_energy);
         tree.Branch("p",                 &p);
         tree.Branch("px",                &Px);

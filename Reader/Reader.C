@@ -93,6 +93,16 @@ int Reader(string filename = "")
     // Correlation gammagamma_60Co(22, 22, 1173, 1332);
     // Correlations.push_back(gammagamma_60Co);
 
+    InitHistogram(-11); // electron
+    InitHistogram(12); // electron
+    InitHistogram(-12); // electron
+    InitHistogram(11);  // positron
+    InitHistogram(22);  // gamma
+    InitHistogram(2212); // proton
+    InitHistogram(1000170320);
+    InitHistogram(1000180320);
+    InitHistogram(1000160310);
+
     // Reading TTree
     int Verbosity = 0;
     while (Reader->Next())
@@ -109,30 +119,30 @@ int Reader(string filename = "")
             if (Verbosity > 0)
                 Info(Form("%s \t E = %.1f keV \t Ex = %.1f keV \t px = %.2f \t py = %.2f \t pz = %.2f", PDGtoName((*Code)[i]).c_str(), (*Energy)[i], (*p)[i], (*Px)[i], (*Py)[i], (*Pz)[i]), 1);
 
-            InitHistogram((*Code)[i]);
+            // InitHistogram((*Code)[i]);
             
             // Filling histograms
-            H_time[(*Code)[i]]->Fill((*Time)[i]);
+            // H_time[(*Code)[i]]->Fill((*Time)[i]);
             H_E[(*Code)[i]]->Fill((*Energy)[i]);
             H_Ex[(*Code)[i]]->Fill((*Excitation_energy)[i]);
-            H_px[(*Code)[i]]->Fill((*Px)[i]);
-            H_py[(*Code)[i]]->Fill((*Py)[i]);
-            H_pz[(*Code)[i]]->Fill((*Pz)[i]);
+            // H_px[(*Code)[i]]->Fill((*Px)[i]);
+            // H_py[(*Code)[i]]->Fill((*Py)[i]);
+            // H_pz[(*Code)[i]]->Fill((*Pz)[i]);
 
-            for (Correlation &correlation : Correlations)
-            {
-                if (((*Code)[i] == correlation.PDG1 && abs((*Energy)[i] - correlation.E1) < 1))
-                {
-                    for (int j = i + 1; j < Code->GetSize(); j++)
-                    {
-                        if (((*Code)[j] == correlation.PDG2 && abs((*Energy)[j] - correlation.E2) < 1))
-                        {
-                            double costheta = ((*Px)[i] * (*Px)[j] + (*Py)[i] * (*Py)[j] + (*Pz)[i] * (*Pz)[j]);
-                            correlation.Fill(costheta);
-                        }
-                    }
-                }
-            }
+            // for (Correlation &correlation : Correlations)
+            // {
+            //     if (((*Code)[i] == correlation.PDG1 && abs((*Energy)[i] - correlation.E1) < 1))
+            //     {
+            //         for (int j = i + 1; j < Code->GetSize(); j++)
+            //         {
+            //             if (((*Code)[j] == correlation.PDG2 && abs((*Energy)[j] - correlation.E2) < 1))
+            //             {
+            //                 double costheta = ((*Px)[i] * (*Px)[j] + (*Py)[i] * (*Py)[j] + (*Pz)[i] * (*Pz)[j]);
+            //                 correlation.Fill(costheta);
+            //             }
+            //         }
+            //     }
+            // }
         }
         
         if (Verbosity > 0)

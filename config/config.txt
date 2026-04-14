@@ -23,6 +23,7 @@ iCVP=0.
 iCT=0.
 iCTP=0.
 iCA=0.
+a=0.960
 [Cuts]
 Distance=1.0
 Lifetime=1e9
